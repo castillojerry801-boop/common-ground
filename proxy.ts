@@ -24,7 +24,7 @@ function isPublicPath(pathname: string): boolean {
   return false;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // If env vars aren't configured, pass through instead of hard-crashing.
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
