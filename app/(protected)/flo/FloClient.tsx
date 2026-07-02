@@ -85,7 +85,12 @@ System services:\n${serviceLines}`;
           }),
         });
 
-        if (!res.ok || !res.body) throw new Error("Failed to reach FLO");
+        if (!res.ok) {
+          const { error } = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+          throw new Error(error ?? `HTTP ${res.status}`);
+        }
+
+        if (!res.body) throw new Error("No response body");
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
@@ -100,13 +105,13 @@ System services:\n${serviceLines}`;
             { role: "assistant", content: full },
           ]);
         }
-      } catch {
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Unknown error";
         setMessages((prev) => [
           ...prev.slice(0, -1),
           {
             role: "assistant",
-            content:
-              "I'm having trouble connecting right now. Check that OPENAI_API_KEY is set in your Vercel environment variables.",
+            content: `⚠️ ${message}`,
           },
         ]);
       } finally {

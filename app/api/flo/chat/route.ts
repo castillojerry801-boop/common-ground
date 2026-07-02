@@ -45,25 +45,30 @@ export async function POST(request: Request) {
     ? `${SYSTEM_PROMPT}\n\nCurrent platform context:\n${context}`
     : SYSTEM_PROMPT;
 
-  const stream = await openai.chat.completions.create({
-    model: MODEL,
-    messages: [{ role: "system", content: systemContent }, ...messages],
-    stream: true,
-    max_tokens: 1024,
-  });
+  try {
+    const stream = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [{ role: "system", content: systemContent }, ...messages],
+      stream: true,
+      max_tokens: 1024,
+    });
 
-  const encoder = new TextEncoder();
-  const readable = new ReadableStream({
-    async start(controller) {
-      for await (const chunk of stream) {
-        const text = chunk.choices[0]?.delta?.content ?? "";
-        if (text) controller.enqueue(encoder.encode(text));
-      }
-      controller.close();
-    },
-  });
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      async start(controller) {
+        for await (const chunk of stream) {
+          const text = chunk.choices[0]?.delta?.content ?? "";
+          if (text) controller.enqueue(encoder.encode(text));
+        }
+        controller.close();
+      },
+    });
 
-  return new Response(readable, {
-    headers: { "Content-Type": "text/plain; charset=utf-8" },
-  });
+    return new Response(readable, {
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return Response.json({ error: message }, { status: 500 });
+  }
 }
