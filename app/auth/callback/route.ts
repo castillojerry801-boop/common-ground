@@ -12,6 +12,13 @@ import type { NextRequest } from "next/server";
  */
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
+  const { searchParams } = request.nextUrl;
+
+  // Exchange the code Supabase puts in the URL after email confirmation / magic link
+  const code = searchParams.get("code");
+  if (code) {
+    await supabase.auth.exchangeCodeForSession(code);
+  }
 
   const {
     data: { user },
@@ -21,9 +28,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Preserve org context that was set by the branded login page
-  const orgSlug =
-    request.nextUrl.searchParams.get("org") ?? undefined;
+  const orgSlug = searchParams.get("org") ?? undefined;
 
   const destination = await resolveUserDestination(user.id, supabase, orgSlug);
   return NextResponse.redirect(new URL(destination, request.url));
