@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       model: MODEL,
       messages: [{ role: "system", content: systemContent }, ...messages],
       stream: true,
-      max_tokens: 1024,
+      max_completion_tokens: 1024,
     });
 
     const encoder = new TextEncoder();
