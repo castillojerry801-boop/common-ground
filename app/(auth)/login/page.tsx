@@ -1,5 +1,6 @@
 import LoginForm from "./LoginForm";
 import type { Metadata } from "next";
+import { CGLogoStacked } from "@/app/components/ui/CGMark";
 
 export const metadata: Metadata = {
   title: "Sign In — Common Ground",
@@ -9,10 +10,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm">
-        {/* Wordmark */}
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-500 mb-12 text-center">
-          Common Ground
-        </p>
+        {/* Logo */}
+        <div className="flex justify-center mb-12 text-zinc-50">
+          <CGLogoStacked size={68} />
+        </div>
 
         {/* Headline */}
         <div className="mb-10">

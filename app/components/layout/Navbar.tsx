@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { CGLogoHorizontal } from "@/app/components/ui/CGMark";
 
 const navLinks = [
   { label: "Products", href: "#products" },
@@ -28,11 +29,8 @@ export default function Navbar() {
       }`}
     >
       <nav className="mx-auto max-w-7xl px-6 lg:px-8 h-16 flex items-center justify-between">
-        <Link
-          href="/"
-          className="text-zinc-950 dark:text-zinc-50 font-semibold text-base tracking-tight"
-        >
-          Common Ground
+        <Link href="/" className="text-zinc-950 dark:text-zinc-50">
+          <CGLogoHorizontal size={34} />
         </Link>
 
         {/* Desktop nav */}
