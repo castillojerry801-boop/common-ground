@@ -23,13 +23,12 @@ const STATUS_DOT = {
 };
 const STATUS_LABEL = { healthy: "Healthy", degraded: "Degraded", down: "Down" };
 
-function overallStatus(services: ServiceStatus[]): ServiceStatus["status"] {
-  if (services.some((s) => s.status === "down")) return "down";
-  if (services.some((s) => s.status === "degraded")) return "degraded";
+function overallStatus(s: ServiceStatus[]): ServiceStatus["status"] {
+  if (s.some((x) => x.status === "down")) return "down";
+  if (s.some((x) => x.status === "degraded")) return "degraded";
   return "healthy";
 }
 
-// Strip emoji and markdown symbols so TTS sounds natural
 function cleanForSpeech(text: string): string {
   return text
     .replace(/[🔴🟠🟡🟢⚠️]/gu, "")
@@ -45,73 +44,161 @@ export default function FloClient({ userEmail, stats, services }: FloClientProps
   const [loading, setLoading] = useState(false);
   const [briefed, setBriefed] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [voiceOutput, setVoiceOutput] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [micAlwaysOn, setMicAlwaysOn] = useState(true);   // owner default: on
+  const [voiceOutput, setVoiceOutput] = useState(true);    // owner default: on
   const [speechSupported, setSpeechSupported] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+  const micAlwaysOnRef = useRef(micAlwaysOn);
+  micAlwaysOnRef.current = micAlwaysOn;
   const voiceOutputRef = useRef(voiceOutput);
   voiceOutputRef.current = voiceOutput;
+  const loadingRef = useRef(loading);
+  loadingRef.current = loading;
 
   const health = overallStatus(services);
 
   useEffect(() => {
-    const supported =
+    const ok =
       typeof window !== "undefined" &&
       ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
-    setSpeechSupported(supported);
+    setSpeechSupported(ok);
   }, []);
 
-  const speak = useCallback((text: string) => {
-    if (!voiceOutputRef.current || typeof window === "undefined") return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(cleanForSpeech(text));
-    utterance.rate = 0.92;
-    utterance.pitch = 1.05;
-    // Prefer a natural-sounding voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(
-      (v) =>
-        v.name.includes("Samantha") ||
-        v.name.includes("Google US English") ||
-        v.name.includes("Alex")
-    );
-    if (preferred) utterance.voice = preferred;
-    window.speechSynthesis.speak(utterance);
+  // ── Voice output via OpenAI TTS ───────────────────────────────────────────
+  const speak = useCallback(async (text: string, onDone?: () => void) => {
+    if (!voiceOutputRef.current) { onDone?.(); return; }
+
+    // Stop any current audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    setIsSpeaking(true);
+
+    try {
+      const res = await fetch("/api/flo/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: cleanForSpeech(text) }),
+      });
+
+      if (!res.ok) throw new Error("TTS failed");
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+        setIsSpeaking(false);
+        onDone?.();
+      };
+
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+        setIsSpeaking(false);
+        onDone?.();
+      };
+
+      await audio.play();
+    } catch {
+      setIsSpeaking(false);
+      onDone?.();
+    }
   }, []);
 
-  const buildContext = useCallback(() => {
-    const now = new Date().toLocaleString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const serviceLines = services
-      .map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`)
-      .join("\n");
-    return `Current time: ${now}
-Platform users: ${stats.userCount}
-Organizations: ${stats.orgCount}
-Platform URL: cg-workshop.com — live
-System services:\n${serviceLines}`;
-  }, [stats, services]);
+  // ── Microphone ────────────────────────────────────────────────────────────
+  const startListening = useCallback(() => {
+    if (!speechSupported || loadingRef.current) return;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+
+    // Abort existing session
+    recognitionRef.current?.abort();
+
+    const recognition = new SR();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event: {
+      results: { isFinal: boolean; [i: number]: { transcript: string } }[];
+    }) => {
+      const transcript = Array.from(event.results)
+        .map((r) => r[0].transcript)
+        .join("");
+      setInput(transcript);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      setInput((current) => {
+        const text = current.trim();
+        if (text && !loadingRef.current) {
+          setTimeout(() => {
+            setInput("");
+            // Capture current messages via ref so closure is fresh
+            const history = messagesRef.current;
+            sendMessageRef.current(text, history);
+          }, 0);
+        }
+        return current;
+      });
+    };
+
+    recognition.onerror = () => setIsListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [speechSupported]);
+
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  }, []);
+
+  // ── Send message ──────────────────────────────────────────────────────────
   const sendMessage = useCallback(
     async (userContent: string, history: Message[]) => {
+      // Pause mic while FLO is thinking / speaking
+      recognitionRef.current?.abort();
+      setIsListening(false);
+
       setLoading(true);
-      window.speechSynthesis?.cancel();
 
       const outgoing: Message = { role: "user", content: userContent };
       const updatedHistory = userContent ? [...history, outgoing] : history;
       if (userContent) setMessages(updatedHistory);
-
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
+      const buildContext = () => {
+        const now = new Date().toLocaleString("en-US", {
+          weekday: "long", year: "numeric", month: "long",
+          day: "numeric", hour: "2-digit", minute: "2-digit",
+        });
+        return `Current time: ${now}
+Platform users: ${stats.userCount}
+Organizations: ${stats.orgCount}
+Platform URL: cg-workshop.com — live
+System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`).join("\n")}`;
+      };
+
+      let full = "";
       try {
         const res = await fetch("/api/flo/chat", {
           method: "POST",
@@ -127,7 +214,6 @@ System services:\n${serviceLines}`;
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
-        let full = "";
 
         while (true) {
           const { done, value } = await reader.read();
@@ -138,22 +224,33 @@ System services:\n${serviceLines}`;
             { role: "assistant", content: full },
           ]);
         }
-
-        speak(full);
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Unknown error";
+        full = `⚠️ ${err instanceof Error ? err.message : "Unknown error"}`;
         setMessages((prev) => [
           ...prev.slice(0, -1),
-          { role: "assistant", content: `⚠️ ${message}` },
+          { role: "assistant", content: full },
         ]);
       } finally {
         setLoading(false);
       }
+
+      // Speak response, then resume mic if always-on
+      if (full && !full.startsWith("⚠️")) {
+        speak(full, () => {
+          if (micAlwaysOnRef.current) startListening();
+        });
+      } else if (micAlwaysOnRef.current) {
+        startListening();
+      }
     },
-    [buildContext, speak]
+    [stats, services, speak, startListening]
   );
 
-  // Initial brief on mount
+  // Keep a stable ref to sendMessage for use inside closures
+  const sendMessageRef = useRef(sendMessage);
+  sendMessageRef.current = sendMessage;
+
+  // Initial brief
   useEffect(() => {
     if (!briefed) {
       setBriefed(true);
@@ -168,58 +265,35 @@ System services:\n${serviceLines}`;
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // When micAlwaysOn toggled ON, start immediately if idle
+  useEffect(() => {
+    if (micAlwaysOn && !loading && !isSpeaking && !isListening) {
+      startListening();
+    }
+    if (!micAlwaysOn) {
+      stopListening();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [micAlwaysOn]);
+
   async function handleSend(e?: React.FormEvent) {
     e?.preventDefault();
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text || loading || isListening) return;
     setInput("");
     await sendMessage(text, messages);
     inputRef.current?.focus();
   }
 
-  function startListening() {
-    if (!speechSupported || isListening) return;
-    window.speechSynthesis?.cancel();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    recognition.lang = "en-US";
-
-    recognition.onresult = (event: { results: { isFinal: boolean; [index: number]: { transcript: string } }[] }) => {
-      const transcript = Array.from(event.results)
-        .map((r) => r[0].transcript)
-        .join("");
-      setInput(transcript);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      // Auto-send whatever was captured
-      setInput((current) => {
-        const text = current.trim();
-        if (text) {
-          setTimeout(() => {
-            setInput("");
-            sendMessage(text, messages);
-          }, 0);
-        }
-        return current;
-      });
-    };
-
-    recognition.onerror = () => setIsListening(false);
-
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
+  function toggleMic() {
+    if (isListening) { stopListening(); setMicAlwaysOn(false); }
+    else { setMicAlwaysOn(true); startListening(); }
   }
 
-  function stopListening() {
-    recognitionRef.current?.stop();
-    setIsListening(false);
+  function stopSpeaking() {
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    setIsSpeaking(false);
+    if (micAlwaysOnRef.current) startListening();
   }
 
   return (
@@ -235,7 +309,7 @@ System services:\n${serviceLines}`;
           {/* Voice output toggle */}
           <button
             onClick={() => {
-              if (voiceOutput) window.speechSynthesis?.cancel();
+              if (voiceOutput && audioRef.current) { audioRef.current.pause(); audioRef.current = null; setIsSpeaking(false); }
               setVoiceOutput((v) => !v);
             }}
             title={voiceOutput ? "Mute FLO" : "Unmute FLO"}
@@ -245,17 +319,16 @@ System services:\n${serviceLines}`;
                 : "border-zinc-800 text-zinc-600 hover:text-zinc-400"
             }`}
           >
-            {voiceOutput ? (
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M12 6v12m-3.536-9.536a5 5 0 000 7.072M9.172 9.172L12 12m0 0l2.828 2.828M12 12L9.172 9.172M12 12l2.828-2.828" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.071 4.929a10 10 0 010 14.142" />
-              </svg>
-            ) : (
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-              </svg>
-            )}
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              {voiceOutput ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M12 6v12m0 0c-1.657 0-3-1.343-3-3V9a3 3 0 016 0v6c0 1.657-1.343 3-3 3zm0 0v3.75M19.071 4.929a10 10 0 010 14.142" />
+              ) : (
+                <>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                </>
+              )}
+            </svg>
             {voiceOutput ? "Voice on" : "Voice off"}
           </button>
 
@@ -362,36 +435,57 @@ System services:\n${serviceLines}`;
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Listening indicator */}
-          {isListening && (
-            <div className="px-6 pb-2 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
-              <span className="text-xs text-red-400">Listening… speak now</span>
-            </div>
-          )}
+          {/* Status bar above input */}
+          <div className="px-6 pt-2 pb-1 flex items-center gap-3 min-h-[28px]">
+            {isListening && (
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-400" />
+                </span>
+                <span className="text-xs text-red-400">Listening…</span>
+              </div>
+            )}
+            {isSpeaking && !isListening && (
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
+                </span>
+                <span className="text-xs text-amber-400">FLO is speaking</span>
+                <button onClick={stopSpeaking} className="text-[11px] text-zinc-600 hover:text-zinc-400 underline ml-1">
+                  stop
+                </button>
+              </div>
+            )}
+            {loading && !isListening && !isSpeaking && (
+              <span className="text-xs text-zinc-600">FLO is thinking…</span>
+            )}
+          </div>
 
           {/* Input */}
           <div className="border-t border-zinc-800/60 px-6 py-4 shrink-0">
             <form onSubmit={handleSend} className="flex gap-3 items-center">
-              {/* Mic button */}
+              {/* Mic toggle */}
               {speechSupported && (
                 <button
                   type="button"
-                  onMouseDown={startListening}
-                  onMouseUp={stopListening}
-                  onTouchStart={startListening}
-                  onTouchEnd={stopListening}
-                  onClick={isListening ? stopListening : startListening}
-                  disabled={loading}
-                  title="Hold to speak"
+                  onClick={toggleMic}
+                  disabled={loading || isSpeaking}
+                  title={micAlwaysOn ? "Mic on — click to turn off" : "Mic off — click to turn on"}
                   className={`shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center transition-all disabled:opacity-30 ${
                     isListening
                       ? "border-red-500 bg-red-950/40 text-red-400"
+                      : micAlwaysOn
+                      ? "border-amber-600/60 bg-amber-950/20 text-amber-400"
                       : "border-zinc-700 bg-zinc-900/60 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"
                   }`}
                 >
                   {isListening ? (
-                    <span className="w-3 h-3 rounded-full bg-red-400 animate-pulse" />
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-400" />
+                    </span>
                   ) : (
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
@@ -428,10 +522,7 @@ System services:\n${serviceLines}`;
 
 function PriorityItem({ level, text }: { level: "fire" | "attention" | "todo" | "healthy"; text: string }) {
   const dot: Record<string, string> = {
-    fire: "bg-red-400",
-    attention: "bg-orange-400",
-    todo: "bg-yellow-400",
-    healthy: "bg-emerald-400",
+    fire: "bg-red-400", attention: "bg-orange-400", todo: "bg-yellow-400", healthy: "bg-emerald-400",
   };
   return (
     <div className="flex items-center gap-2.5 py-1.5">
