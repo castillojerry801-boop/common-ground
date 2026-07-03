@@ -2,8 +2,100 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Update this to your preferred model — e.g. "gpt-4o-mini" or "gpt-4o"
 const MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+
+// ── Tools available to FLO ────────────────────────────────────────────────────
+
+const FLO_TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
+  {
+    type: "function",
+    function: {
+      name: "get_weather",
+      description:
+        "Get live current weather conditions and a 3-day forecast for any city or location.",
+      parameters: {
+        type: "object",
+        properties: {
+          location: {
+            type: "string",
+            description: "City name, e.g. 'San Antonio', 'New York', 'London, UK'",
+          },
+        },
+        required: ["location"],
+      },
+    },
+  },
+];
+
+// WMO weather code descriptions
+const WMO: Record<number, string> = {
+  0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+  45: "Foggy", 48: "Icy fog",
+  51: "Light drizzle", 53: "Moderate drizzle", 55: "Heavy drizzle",
+  61: "Light rain", 63: "Moderate rain", 65: "Heavy rain",
+  71: "Light snow", 73: "Moderate snow", 75: "Heavy snow", 77: "Snow grains",
+  80: "Light showers", 81: "Moderate showers", 82: "Heavy showers",
+  85: "Snow showers", 86: "Heavy snow showers",
+  95: "Thunderstorm", 96: "Thunderstorm with hail", 99: "Thunderstorm with heavy hail",
+};
+const wmo = (code: number) => WMO[code] ?? "Unknown conditions";
+
+async function getWeather(location: string): Promise<string> {
+  try {
+    const geoRes = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en`
+    );
+    const geoData = await geoRes.json();
+    const place = geoData.results?.[0];
+    if (!place) return `Could not find a location matching "${location}". Try a different city name.`;
+
+    const { latitude, longitude, name, admin1, country } = place;
+    const label = [name, admin1, country].filter(Boolean).join(", ");
+
+    const wxRes = await fetch(
+      `https://api.open-meteo.com/v1/forecast` +
+      `?latitude=${latitude}&longitude=${longitude}` +
+      `&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m` +
+      `&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_sum` +
+      `&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch` +
+      `&timezone=auto&forecast_days=4`
+    );
+    const wx = await wxRes.json();
+    const c = wx.current;
+    const d = wx.daily;
+
+    const forecast = [1, 2, 3].map((i) => ({
+      date: d.time[i],
+      high: `${Math.round(d.temperature_2m_max[i])}°F`,
+      low: `${Math.round(d.temperature_2m_min[i])}°F`,
+      conditions: wmo(d.weather_code[i]),
+      precipitation: `${d.precipitation_sum[i].toFixed(2)} in`,
+    }));
+
+    return JSON.stringify({
+      location: label,
+      current: {
+        conditions: wmo(c.weather_code),
+        temperature: `${Math.round(c.temperature_2m)}°F`,
+        feels_like: `${Math.round(c.apparent_temperature)}°F`,
+        humidity: `${c.relative_humidity_2m}%`,
+        wind: `${Math.round(c.wind_speed_10m)} mph`,
+        precipitation: `${c.precipitation} in`,
+      },
+      forecast,
+    });
+  } catch (err) {
+    return `Weather service temporarily unavailable. (${String(err)})`;
+  }
+}
+
+async function executeTool(name: string, args: string): Promise<string> {
+  if (name === "get_weather") {
+    const { location } = JSON.parse(args);
+    return getWeather(location);
+  }
+  return `Unknown tool: ${name}`;
+}
 
 const SYSTEM_PROMPT = `# FLO FOUNDATION
 Version 1.0
@@ -572,35 +664,102 @@ export async function POST(request: Request) {
   }
 
   const { messages, context } = await request.json();
-
   const systemContent = context
     ? `${SYSTEM_PROMPT}\n\nCurrent platform context:\n${context}`
     : SYSTEM_PROMPT;
 
-  try {
-    const stream = await openai.chat.completions.create({
-      model: MODEL,
-      messages: [{ role: "system", content: systemContent }, ...messages],
-      stream: true,
-      max_completion_tokens: 1024,
-    });
+  const allMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    { role: "system", content: systemContent },
+    ...messages,
+  ];
 
-    const encoder = new TextEncoder();
-    const readable = new ReadableStream({
-      async start(controller) {
-        for await (const chunk of stream) {
+  const encoder = new TextEncoder();
+  const readable = new ReadableStream({
+    async start(controller) {
+      try {
+        // First streaming call — tools enabled
+        const firstStream = await openai.chat.completions.create({
+          model: MODEL,
+          messages: allMessages,
+          tools: FLO_TOOLS,
+          tool_choice: "auto",
+          stream: true,
+          max_completion_tokens: 1024,
+        });
+
+        const toolMap: Record<number, { id: string; name: string; args: string }> = {};
+        let hasToolCalls = false;
+
+        for await (const chunk of firstStream) {
+          const delta = chunk.choices[0]?.delta;
+
+          // Stream regular content directly to client
+          if (delta?.content && !hasToolCalls) {
+            controller.enqueue(encoder.encode(delta.content));
+          }
+
+          // Collect tool call deltas
+          if (delta?.tool_calls) {
+            hasToolCalls = true;
+            for (const tc of delta.tool_calls) {
+              if (!toolMap[tc.index]) toolMap[tc.index] = { id: "", name: "", args: "" };
+              if (tc.id) toolMap[tc.index].id = tc.id;
+              if (tc.function?.name) toolMap[tc.index].name += tc.function.name;
+              if (tc.function?.arguments) toolMap[tc.index].args += tc.function.arguments;
+            }
+          }
+        }
+
+        // No tools needed — already streamed the full response
+        if (!hasToolCalls) {
+          controller.close();
+          return;
+        }
+
+        // Execute all requested tools in parallel
+        const toolCalls = Object.values(toolMap);
+        const toolResults = await Promise.all(
+          toolCalls.map((tc) => executeTool(tc.name, tc.args))
+        );
+
+        // Build the conversation with tool results
+        const assistantMsg: OpenAI.Chat.ChatCompletionMessageParam = {
+          role: "assistant",
+          content: null,
+          tool_calls: toolCalls.map((tc) => ({
+            id: tc.id,
+            type: "function" as const,
+            function: { name: tc.name, arguments: tc.args },
+          })),
+        };
+        const resultMsgs: OpenAI.Chat.ChatCompletionMessageParam[] = toolCalls.map((tc, i) => ({
+          role: "tool",
+          tool_call_id: tc.id,
+          content: toolResults[i],
+        }));
+
+        // Final streaming call with live data injected
+        const finalStream = await openai.chat.completions.create({
+          model: MODEL,
+          messages: [...allMessages, assistantMsg, ...resultMsgs],
+          stream: true,
+          max_completion_tokens: 1024,
+        });
+
+        for await (const chunk of finalStream) {
           const text = chunk.choices[0]?.delta?.content ?? "";
           if (text) controller.enqueue(encoder.encode(text));
         }
-        controller.close();
-      },
-    });
 
-    return new Response(readable, {
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return Response.json({ error: message }, { status: 500 });
-  }
+        controller.close();
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        controller.error(new Error(message));
+      }
+    },
+  });
+
+  return new Response(readable, {
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
 }
