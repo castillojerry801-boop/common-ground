@@ -25,6 +25,24 @@ const FLO_TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "web_search",
+      description:
+        "Search the internet for current information — sports scores, news, standings, player stats, events, prices, or anything else that requires up-to-date data. Use this whenever the answer might have changed recently.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "The search query, written as a natural search phrase. Be specific — e.g. 'Spurs score last night', 'Cowboys injury report today', 'NBA standings 2025'.",
+          },
+        },
+        required: ["query"],
+      },
+    },
+  },
 ];
 
 // WMO weather code descriptions
@@ -89,11 +107,42 @@ async function getWeather(location: string): Promise<string> {
   }
 }
 
-async function executeTool(name: string, args: string): Promise<string> {
-  if (name === "get_weather") {
-    const { location } = JSON.parse(args);
-    return getWeather(location);
+async function webSearch(query: string): Promise<string> {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) return "Web search is not configured yet. TAVILY_API_KEY is missing.";
+
+  try {
+    const res = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query,
+        search_depth: "basic",
+        max_results: 5,
+        include_answer: true,
+      }),
+    });
+    const data = await res.json();
+
+    // Tavily returns a top-level `answer` plus individual results
+    const answer = data.answer ?? null;
+    const results = (data.results ?? []).map((r: { title: string; url: string; content: string }) => ({
+      title: r.title,
+      url: r.url,
+      snippet: r.content?.slice(0, 300),
+    }));
+
+    return JSON.stringify({ answer, results });
+  } catch (err) {
+    return `Web search temporarily unavailable. (${String(err)})`;
   }
+}
+
+async function executeTool(name: string, args: string): Promise<string> {
+  const parsed = JSON.parse(args);
+  if (name === "get_weather") return getWeather(parsed.location);
+  if (name === "web_search") return webSearch(parsed.query);
   return `Unknown tool: ${name}`;
 }
 
