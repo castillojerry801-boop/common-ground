@@ -57,7 +57,7 @@ export default function Process() {
 
                 <div className="mb-8">
                   <div className="w-11 h-11 rounded-full border-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-center relative z-10">
-                    <span className="text-xs font-bold text-zinc-400 dark:text-zinc-600 tabular-nums">
+                    <span className="text-xs font-bold text-amber-500 dark:text-amber-500 tabular-nums">
                       {step.number}
                     </span>
                   </div>
@@ -85,7 +85,7 @@ export default function Process() {
                 )}
 
                 <div className="w-11 h-11 rounded-full border-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-center flex-shrink-0 relative z-10">
-                  <span className="text-xs font-bold text-zinc-400 dark:text-zinc-600 tabular-nums">
+                  <span className="text-xs font-bold text-amber-500 dark:text-amber-500 tabular-nums">
                     {step.number}
                   </span>
                 </div>

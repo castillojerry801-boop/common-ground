@@ -27,7 +27,7 @@ export default function Contact() {
           <AnimateIn delay={300}>
             <a
               href="mailto:hello@commonground.build"
-              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-zinc-50 text-zinc-950 text-sm font-medium hover:bg-white transition-colors duration-150"
+              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-amber-500 hover:bg-amber-400 text-zinc-950 text-sm font-medium transition-colors duration-150"
             >
               hello@commonground.build
               <svg

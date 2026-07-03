@@ -51,49 +51,55 @@ export default function Products() {
           {products.map((product, i) => (
             <AnimateIn key={product.name} delay={i * 100} className="h-full">
               <div
-                className={`relative rounded-2xl border p-8 flex flex-col gap-6 h-full transition-all duration-300 group ${
+                className={`relative rounded-2xl border flex flex-col gap-6 h-full transition-all duration-300 group overflow-hidden ${
                   product.available
                     ? "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-xl hover:shadow-zinc-100/50 dark:hover:shadow-zinc-900/50"
                     : "border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50"
                 }`}
               >
-                <div className="text-4xl leading-none">
-                  {product.icon ? (
-                    <span role="img" aria-label={product.name}>
-                      {product.icon}
-                    </span>
+                {/* Amber accent stripe */}
+                {product.available && (
+                  <div className="h-[3px] w-full bg-gradient-to-r from-amber-500 to-amber-400/60 flex-shrink-0" />
+                )}
+                <div className={`flex flex-col gap-6 flex-1 px-8 pb-8 ${product.available ? "" : "pt-8"}`}>
+                  <div className="text-4xl leading-none">
+                    {product.icon ? (
+                      <span role="img" aria-label={product.name}>
+                        {product.icon}
+                      </span>
+                    ) : (
+                      <div className="w-11 h-11 rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 flex items-center justify-center text-zinc-400 dark:text-zinc-600 text-xl font-light">
+                        +
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-2 flex-1">
+                    <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      {product.tagline}
+                    </p>
+                    <h3 className="text-2xl font-bold text-zinc-950 dark:text-zinc-50 tracking-tight">
+                      {product.name}
+                    </h3>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mt-1.5">
+                      {product.description}
+                    </p>
+                  </div>
+
+                  {product.available && product.href ? (
+                    <a
+                      href={product.href}
+                      className="text-sm font-medium text-zinc-950 dark:text-zinc-50 flex items-center gap-1.5 group-hover:gap-2.5 transition-all duration-150"
+                    >
+                      Learn more
+                      <span aria-hidden="true">→</span>
+                    </a>
                   ) : (
-                    <div className="w-11 h-11 rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 flex items-center justify-center text-zinc-400 dark:text-zinc-600 text-xl font-light">
-                      +
-                    </div>
+                    <span className="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Coming Soon
+                    </span>
                   )}
                 </div>
-
-                <div className="flex flex-col gap-2 flex-1">
-                  <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                    {product.tagline}
-                  </p>
-                  <h3 className="text-2xl font-bold text-zinc-950 dark:text-zinc-50 tracking-tight">
-                    {product.name}
-                  </h3>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mt-1.5">
-                    {product.description}
-                  </p>
-                </div>
-
-                {product.available && product.href ? (
-                  <a
-                    href={product.href}
-                    className="text-sm font-medium text-zinc-950 dark:text-zinc-50 flex items-center gap-1.5 group-hover:gap-2.5 transition-all duration-150"
-                  >
-                    Learn more
-                    <span aria-hidden="true">→</span>
-                  </a>
-                ) : (
-                  <span className="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                    Coming Soon
-                  </span>
-                )}
               </div>
             </AnimateIn>
           ))}

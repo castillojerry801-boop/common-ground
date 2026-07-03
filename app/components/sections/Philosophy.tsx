@@ -1,9 +1,18 @@
 import AnimateIn from "@/app/components/ui/AnimateIn";
+import { CGMark } from "@/app/components/ui/CGMark";
 
 export default function Philosophy() {
   return (
-    <section id="philosophy" className="bg-zinc-950 py-32 lg:py-44">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+    <section id="philosophy" className="relative bg-zinc-950 py-32 lg:py-44 overflow-hidden">
+      {/* Ghost CG mark — far right */}
+      <div
+        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/3 pointer-events-none text-zinc-800"
+        aria-hidden="true"
+      >
+        <CGMark size={480} />
+      </div>
+
+      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
         <div className="max-w-4xl">
           <AnimateIn>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-500 mb-10">

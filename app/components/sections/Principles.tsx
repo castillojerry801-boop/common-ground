@@ -123,7 +123,7 @@ export default function Principles() {
           {principles.map((p, i) => (
             <AnimateIn key={p.title} delay={i * 80} className="h-full">
               <div className="rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-8 flex flex-col gap-5 h-full">
-                <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/40 flex items-center justify-center text-amber-600 dark:text-amber-500">
                   {p.icon}
                 </div>
                 <div>
