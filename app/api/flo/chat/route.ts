@@ -6,6 +6,11 @@ const MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
 // ── Tools available to FLO ────────────────────────────────────────────────────
 
+const CG_SITES = [
+  { name: "Common Ground Workshop", url: "https://cg-workshop.com" },
+  { name: "GameFloHQ", url: "https://gameflohq.com" },
+];
+
 const FLO_TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
   {
     type: "function",
@@ -23,6 +28,15 @@ const FLO_TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
         },
         required: ["location"],
       },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "check_deployments",
+      description:
+        "Check the live build and deployment status of all Common Ground sites (Common Ground Workshop and GameFloHQ). Returns current status, last deploy time, and whether the latest build succeeded or failed. Use this when Jerry asks about site status, build status, or where things stand.",
+      parameters: { type: "object", properties: {}, required: [] },
     },
   },
   {
@@ -107,6 +121,60 @@ async function getWeather(location: string): Promise<string> {
   }
 }
 
+async function checkDeployments(): Promise<string> {
+  const token = process.env.VERCEL_TOKEN;
+  if (!token) return "VERCEL_TOKEN is not configured. Add it to environment variables to enable deployment status.";
+
+  try {
+    // Fetch all projects
+    const projRes = await fetch("https://api.vercel.com/v9/projects?limit=20", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const projData = await projRes.json();
+    const projects: Array<{ id: string; name: string; targets?: { production?: { alias?: string[] } } }> =
+      projData.projects ?? [];
+
+    if (!projects.length) return "No Vercel projects found under this token.";
+
+    // For each project get the latest deployment
+    const results = await Promise.all(
+      projects.map(async (proj) => {
+        const depRes = await fetch(
+          `https://api.vercel.com/v6/deployments?projectId=${proj.id}&limit=1&target=production`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const depData = await depRes.json();
+        const dep = depData.deployments?.[0];
+
+        const aliases = proj.targets?.production?.alias ?? [];
+        const url = aliases[0] ? `https://${aliases[0]}` : null;
+
+        if (!dep) return { project: proj.name, url, status: "No deployments found", age: null };
+
+        const age = dep.createdAt
+          ? Math.round((Date.now() - dep.createdAt) / 1000 / 60)
+          : null;
+        const ageLabel = age == null ? "unknown"
+          : age < 60 ? `${age}m ago`
+          : age < 1440 ? `${Math.round(age / 60)}h ago`
+          : `${Math.round(age / 1440)}d ago`;
+
+        return {
+          project: proj.name,
+          url,
+          status: dep.state,        // READY | ERROR | BUILDING | CANCELED
+          age: ageLabel,
+          source: dep.meta?.githubCommitMessage ?? null,
+        };
+      })
+    );
+
+    return JSON.stringify({ sites: results });
+  } catch (err) {
+    return `Could not reach Vercel API. (${String(err)})`;
+  }
+}
+
 async function webSearch(query: string): Promise<string> {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) return "Web search is not configured yet. TAVILY_API_KEY is missing.";
@@ -143,6 +211,7 @@ async function executeTool(name: string, args: string): Promise<string> {
   const parsed = JSON.parse(args);
   if (name === "get_weather") return getWeather(parsed.location);
   if (name === "web_search") return webSearch(parsed.query);
+  if (name === "check_deployments") return checkDeployments();
   return `Unknown tool: ${name}`;
 }
 
@@ -366,12 +435,14 @@ You understand the Common Ground ecosystem.
 
 Including:
 
-• Common Ground Workshop
-• FLO
-• GameFloHQ
-• CG Scheduler
+• Common Ground Workshop — cg-workshop.com (live)
+• FLO — built into Common Ground Workshop
+• GameFloHQ — gameflohq.com (live)
+• CG Scheduler — in development
 • Future White Label Apps
 • Future Customer Websites
+
+When Jerry asks about site status, build status, or where things stand — call check_deployments immediately. Do not ask clarifying questions. Just check and report.
 
 You understand they all share common architecture.
 
