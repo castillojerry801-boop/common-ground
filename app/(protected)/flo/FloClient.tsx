@@ -204,7 +204,14 @@ System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`
         const res = await fetch("/api/flo/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: updatedHistory, context: buildContext() }),
+          body: JSON.stringify({
+            messages: updatedHistory,
+            context: buildContext(),
+            localDate: new Date().toLocaleString("en-US", {
+              weekday: "long", year: "numeric", month: "long", day: "numeric",
+              hour: "numeric", minute: "2-digit", timeZoneName: "short",
+            }),
+          }),
         });
 
         if (!res.ok) {

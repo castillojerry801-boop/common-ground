@@ -746,13 +746,13 @@ export async function POST(request: Request) {
     return Response.json({ error: "OPENAI_API_KEY not configured" }, { status: 500 });
   }
 
-  const { messages, context } = await request.json();
+  const { messages, context, localDate } = await request.json();
   const systemContent = context
     ? `${SYSTEM_PROMPT}\n\nCurrent platform context:\n${context}`
     : SYSTEM_PROMPT;
 
-  const now = new Date();
-  const dateContext = `Current date and time: ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}, ${now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZoneName: "short" })}.`;
+  // Use the client's local date/time so timezone is always correct
+  const dateContext = `Current date and time (user's local time): ${localDate ?? new Date().toUTCString()}.`;
 
   const allMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: `${systemContent}\n\n${dateContext}` },
