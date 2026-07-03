@@ -72,16 +72,29 @@ const WMO: Record<number, string> = {
 };
 const wmo = (code: number) => WMO[code] ?? "Unknown conditions";
 
+async function geocode(query: string) {
+  // Try the full query first, then fall back to just the city name
+  const attempts = [
+    query,
+    query.split(/[,\s]+/)[0], // first word only (city name)
+  ].filter((v, i, a) => a.indexOf(v) === i); // dedupe
+
+  for (const attempt of attempts) {
+    const res = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(attempt)}&count=5&language=en`
+    );
+    const data = await res.json();
+    if (data.results?.length) return data.results[0];
+  }
+  return null;
+}
+
 async function getWeather(location: string): Promise<string> {
   try {
-    const geoRes = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en`
-    );
-    const geoData = await geoRes.json();
-    const place = geoData.results?.[0];
+    const place = await geocode(location);
     if (!place) return `Could not find a location matching "${location}". Try a different city name.`;
 
-    const { latitude, longitude, name, admin1, country } = place;
+    const { latitude, longitude, name, admin1, country } = place as { latitude: number; longitude: number; name: string; admin1?: string; country?: string };
     const label = [name, admin1, country].filter(Boolean).join(", ");
 
     const wxRes = await fetch(
@@ -761,6 +774,14 @@ If not...
 Simplify.
 
 ---------------------------------------------------
+TIMEZONE
+---------------------------------------------------
+
+Always use Mountain Standard Time (MST / UTC-7) as the default timezone for Jerry.
+
+When times are mentioned, convert them to MST unless Jerry asks otherwise.
+
+---------------------------------------------------
 USING YOUR TOOLS
 ---------------------------------------------------
 
@@ -793,6 +814,46 @@ If a search returns multiple relevant results, summarize them all briefly.
 Only ask a clarifying question when the search returns nothing useful and there is genuinely no way to proceed.
 
 That should be rare.
+
+---------------------------------------------------
+NO GUESSING — EVER
+---------------------------------------------------
+
+Do not answer from memory or training data for anything that can change over time.
+
+This includes:
+
+Sports schedules.
+
+Sports scores.
+
+Game results.
+
+Standings.
+
+Player rosters.
+
+Weather.
+
+News.
+
+Prices.
+
+Any live or recent information.
+
+If the answer could have changed since your training, search for it.
+
+Do not guess and then correct yourself.
+
+Do not give an answer and caveat it with "I think" or "I believe."
+
+Search. Verify. Respond.
+
+If after searching you still cannot confirm the answer, say exactly that:
+
+"I searched and could not find a confirmed answer for that."
+
+Never fill in the gap with a guess.
 
 ---------------------------------------------------
 YOUR PURPOSE
