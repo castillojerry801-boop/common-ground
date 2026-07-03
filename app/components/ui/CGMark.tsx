@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 interface CGMarkProps {
   size?: number;
   color?: string;
@@ -30,7 +28,8 @@ function colorFilter(color: string): string | undefined {
 export function CGMark({ size = 40, color = "currentColor", className = "" }: CGMarkProps) {
   const filter = colorFilter(color);
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       src="/cg-badge.png"
       width={size}
       height={size}
