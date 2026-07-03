@@ -7,8 +7,8 @@ const MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 // ── Tools available to FLO ────────────────────────────────────────────────────
 
 const CG_SITES = [
-  { name: "Common Ground Workshop", url: "https://cg-workshop.com" },
-  { name: "GameFloHQ", url: "https://gameflohq.com" },
+  { name: "Common Ground Workshop", url: "https://www.cg-workshop.com" },
+  { name: "GameFloHQ", url: "https://app.gameflohq.com" },
 ];
 
 const FLO_TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
@@ -435,9 +435,9 @@ You understand the Common Ground ecosystem.
 
 Including:
 
-• Common Ground Workshop — cg-workshop.com (live)
+• Common Ground Workshop — www.cg-workshop.com (live)
 • FLO — built into Common Ground Workshop
-• GameFloHQ — gameflohq.com (live)
+• GameFloHQ — app.gameflohq.com (live)
 • CG Scheduler — in development
 • Future White Label Apps
 • Future Customer Websites
