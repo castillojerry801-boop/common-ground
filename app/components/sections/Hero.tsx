@@ -94,10 +94,8 @@ export default function Hero() {
               }}
             />
 
-            {/* The mark — zinc-200 / zinc-700 ghost */}
-            <div className="relative text-zinc-200 dark:text-zinc-700">
-              <CGMark size={300} />
-            </div>
+            {/* The mark — ghost watermark */}
+            <CGMark size={300} className="opacity-[0.07] dark:invert dark:opacity-[0.12]" />
 
             {/* Corner accent dots */}
             <div className="absolute top-8 right-12 w-1.5 h-1.5 rounded-full bg-amber-400/60" />

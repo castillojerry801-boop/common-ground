@@ -11,8 +11,8 @@ export default function LoginPage() {
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="flex justify-center mb-12 text-zinc-50">
-          <CGLogoStacked size={68} />
+        <div className="flex justify-center mb-12">
+          <CGLogoStacked size={80} markColor="white" />
         </div>
 
         {/* Headline */}

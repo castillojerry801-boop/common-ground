@@ -29,8 +29,8 @@ export default function Navbar() {
       }`}
     >
       <nav className="mx-auto max-w-7xl px-6 lg:px-8 h-16 flex items-center justify-between">
-        <Link href="/" className="text-zinc-950 dark:text-zinc-50">
-          <CGLogoHorizontal size={34} />
+        <Link href="/">
+          <CGLogoHorizontal size={40} className="dark:invert" />
         </Link>
 
         {/* Desktop nav */}

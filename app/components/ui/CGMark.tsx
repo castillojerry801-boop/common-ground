@@ -1,61 +1,48 @@
+import Image from "next/image";
+
 interface CGMarkProps {
   size?: number;
   color?: string;
   className?: string;
 }
 
-/**
- * The CG combined letterform mark.
- * Uses currentColor so it inherits from the parent text color.
- */
+function colorFilter(color: string): string | undefined {
+  const c = color.toLowerCase().trim();
+  if (
+    c === "currentcolor" ||
+    c === "black" ||
+    c === "#000" ||
+    c === "#000000" ||
+    c === "#0a0a0a"
+  ) {
+    return undefined;
+  }
+  if (c === "white" || c === "#fff" || c === "#ffffff" || c === "#fafafa") {
+    return "brightness(0) invert(1)";
+  }
+  // Amber (#f59e0b)
+  if (c === "#f59e0b") {
+    return "brightness(0) saturate(100%) invert(72%) sepia(97%) saturate(581%) hue-rotate(355deg) brightness(104%)";
+  }
+  return undefined;
+}
+
 export function CGMark({ size = 40, color = "currentColor", className = "" }: CGMarkProps) {
+  const filter = colorFilter(color);
   return (
-    <svg
+    <Image
+      src="/cg-badge.png"
       width={size}
       height={size}
-      viewBox="0 0 100 100"
-      fill="none"
+      alt="Common Ground Workshop"
       className={className}
-      aria-hidden="true"
-    >
-      {/* Outer C ring — 270° arc, gap at upper-right to lower-right */}
-      <path
-        d="M 80.4 19.6 A 43 43 0 1 0 80.4 80.4"
-        stroke={color}
-        strokeWidth="12"
-        strokeLinecap="round"
-      />
-      {/* Inner G arc — concentric, same gap angle */}
-      <path
-        d="M 69.8 30.2 A 28 28 0 1 0 69.8 69.8"
-        stroke={color}
-        strokeWidth="12"
-        strokeLinecap="round"
-      />
-      {/* G crossbar — extends leftward from the outer right edge */}
-      <path
-        d="M 80.4 50 L 54 50"
-        stroke={color}
-        strokeWidth="12"
-        strokeLinecap="round"
-      />
-      {/* G vertical — drops from crossbar to lower gap */}
-      <path
-        d="M 80.4 50 L 80.4 80.4"
-        stroke={color}
-        strokeWidth="12"
-        strokeLinecap="round"
-      />
-    </svg>
+      style={filter ? { filter } : undefined}
+    />
   );
 }
 
-/**
- * Horizontal lockup: CG mark + amber divider + stacked wordmark.
- * Use in Navbar and compact headers.
- */
 export function CGLogoHorizontal({
-  size = 36,
+  size = 40,
   markColor = "currentColor",
   className = "",
 }: {
@@ -63,34 +50,9 @@ export function CGLogoHorizontal({
   markColor?: string;
   className?: string;
 }) {
-  return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <CGMark size={size} color={markColor} />
-      {/* Amber divider */}
-      <div className="w-px self-stretch bg-amber-500/70" />
-      {/* Wordmark */}
-      <div className="flex flex-col leading-none">
-        <span
-          className="font-bold tracking-[0.12em] uppercase text-current"
-          style={{ fontSize: size * 0.33 }}
-        >
-          Common Ground
-        </span>
-        <span
-          className="tracking-[0.18em] uppercase text-current opacity-50 mt-0.5"
-          style={{ fontSize: size * 0.22 }}
-        >
-          — Workshop —
-        </span>
-      </div>
-    </div>
-  );
+  return <CGMark size={size} color={markColor} className={className} />;
 }
 
-/**
- * Stacked lockup: CG mark centered above wordmark.
- * Use on login pages and splash screens.
- */
 export function CGLogoStacked({
   size = 72,
   markColor = "currentColor",
@@ -100,25 +62,5 @@ export function CGLogoStacked({
   markColor?: string;
   className?: string;
 }) {
-  return (
-    <div className={`flex flex-col items-center gap-4 ${className}`}>
-      <CGMark size={size} color={markColor} />
-      {/* Amber rule */}
-      <div className="w-6 h-px bg-amber-500" />
-      <div className="flex flex-col items-center leading-none gap-1">
-        <span
-          className="font-bold tracking-[0.15em] uppercase text-current"
-          style={{ fontSize: size * 0.22 }}
-        >
-          Common Ground
-        </span>
-        <span
-          className="tracking-[0.2em] uppercase text-current opacity-50"
-          style={{ fontSize: size * 0.14 }}
-        >
-          — Workshop —
-        </span>
-      </div>
-    </div>
-  );
+  return <CGMark size={size} color={markColor} className={className} />;
 }

@@ -6,10 +6,10 @@ export default function Philosophy() {
     <section id="philosophy" className="relative bg-zinc-950 py-32 lg:py-44 overflow-hidden">
       {/* Ghost CG mark — far right */}
       <div
-        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/3 pointer-events-none text-zinc-800"
+        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/3 pointer-events-none"
         aria-hidden="true"
       >
-        <CGMark size={480} />
+        <CGMark size={480} className="invert opacity-[0.12]" />
       </div>
 
       <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
