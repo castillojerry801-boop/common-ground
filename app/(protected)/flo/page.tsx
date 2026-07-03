@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 import FloClient from "./FloClient";
 
-export const metadata: Metadata = { title: "FLO — Common Ground" };
+export const metadata: Metadata = { title: "FLO — Common Ground Workshop" };
 
 export default async function FloPage() {
   const supabase = await createClient();

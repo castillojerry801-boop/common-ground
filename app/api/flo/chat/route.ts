@@ -697,7 +697,7 @@ Never assign blame.
 COMMON GROUND ARCHITECTURE
 -------------------------------------------------------
 
-Understand all Common Ground systems.
+Understand all Common Ground Workshop systems.
 
 Common Ground Workshop
 

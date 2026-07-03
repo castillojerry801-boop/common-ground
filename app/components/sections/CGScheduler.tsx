@@ -26,7 +26,7 @@ export default function CGScheduler() {
             <span className="text-zinc-500">for Your Brand.</span>
           </h2>
           <p className="text-xl text-zinc-400 max-w-2xl leading-relaxed mb-20">
-            Common Ground&apos;s appointment scheduling engine — fully branded,
+            Common Ground Workshop&apos;s appointment scheduling engine — fully branded,
             fully yours.
           </p>
         </AnimateIn>
@@ -91,7 +91,7 @@ export default function CGScheduler() {
                 Your Website. Your Brand. Your App.
               </p>
               <p className="text-zinc-500 text-lg">
-                Built with Purpose. Built on Common Ground. Built for You.
+                Built with Purpose. Built on Common Ground Workshop. Built for You.
               </p>
             </div>
 

@@ -36,7 +36,7 @@ export default function Hero() {
             >
               <div className="w-6 h-px bg-amber-500" aria-hidden="true" />
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 dark:text-amber-500">
-                Common Ground
+                Common Ground Workshop
               </p>
             </div>
 

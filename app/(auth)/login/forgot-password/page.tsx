@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-500 mb-12 text-center">
-          Common Ground
+          Common Ground Workshop
         </p>
 
         {sent ? (

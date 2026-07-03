@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Common Ground — We Build With Purpose",
+  title: "Common Ground Workshop — We Build With Purpose",
   description:
-    "Common Ground creates software that helps professionals spend less time managing work and more time doing what they love.",
+    "Common Ground Workshop creates software that helps professionals spend less time managing work and more time doing what they love.",
 };
 
 export default function RootLayout({

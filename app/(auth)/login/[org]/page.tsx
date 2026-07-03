@@ -83,7 +83,7 @@ export default async function BrandedLoginPage({ params }: Props) {
 
         {/* Attribution — intentionally subtle */}
         <div className="mt-10 pt-8 border-t border-zinc-900 text-center">
-          <p className="text-xs text-zinc-800">Secured by Common Ground</p>
+          <p className="text-xs text-zinc-800">Secured by Common Ground Workshop</p>
         </div>
       </div>
     </div>

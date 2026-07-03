@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { CGLogoStacked } from "@/app/components/ui/CGMark";
 
 export const metadata: Metadata = {
-  title: "Sign In — Common Ground",
+  title: "Sign In — Common Ground Workshop",
 };
 
 export default function LoginPage() {

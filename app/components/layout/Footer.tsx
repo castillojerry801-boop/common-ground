@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-6 lg:px-8 py-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-semibold text-zinc-950 dark:text-zinc-50 tracking-tight">
-            Common Ground
+            Common Ground Workshop
           </span>
           <span className="text-xs text-zinc-400 dark:text-zinc-500">
             We build with purpose.
@@ -35,7 +35,7 @@ export default function Footer() {
             </a>
           </nav>
           <p className="text-xs text-zinc-400 dark:text-zinc-500">
-            © {year} Common Ground
+            © {year} Common Ground Workshop
           </p>
         </div>
       </div>
