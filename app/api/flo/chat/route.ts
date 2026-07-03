@@ -717,8 +717,11 @@ export async function POST(request: Request) {
     ? `${SYSTEM_PROMPT}\n\nCurrent platform context:\n${context}`
     : SYSTEM_PROMPT;
 
+  const now = new Date();
+  const dateContext = `Current date and time: ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}, ${now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZoneName: "short" })}.`;
+
   const allMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: systemContent },
+    { role: "system", content: `${systemContent}\n\n${dateContext}` },
     ...messages,
   ];
 
