@@ -40,10 +40,10 @@ export default function Footer() {
               support@cg-workshop.com
             </a>
             <a
-              href="tel:+18012001605"
+              href="tel:+18015498258"
               className="text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-950 dark:hover:text-zinc-50 transition-colors"
             >
-              +1 (801) 200-1605
+              +1 (801) 549-8258
             </a>
           </nav>
           <p className="text-xs text-zinc-400 dark:text-zinc-500">
