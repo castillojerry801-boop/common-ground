@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       model: "tts-1",
       voice: VOICE,
       input: text,
-      speed: 0.95,
+      speed: 0.87,
     });
 
     const buffer = Buffer.from(await response.arrayBuffer());
