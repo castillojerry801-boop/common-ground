@@ -64,6 +64,13 @@ export default function FloClient({ userEmail, stats, services }: FloClientProps
   const loadingRef = useRef(loading);
   loadingRef.current = loading;
 
+  // Streaming TTS queue
+  const ttsQueueRef = useRef<string[]>([]);
+  const isTtsPlayingRef = useRef(false);
+  const ttsStreamDoneRef = useRef(false);
+  const ttsOnDoneRef = useRef<(() => void) | undefined>(undefined);
+  const pendingTtsRef = useRef("");
+
   const health = overallStatus(services);
 
   useEffect(() => {
@@ -73,17 +80,29 @@ export default function FloClient({ userEmail, stats, services }: FloClientProps
     setSpeechSupported(ok);
   }, []);
 
-  // ── Voice output via OpenAI TTS ───────────────────────────────────────────
-  const speak = useCallback(async (text: string, onDone?: () => void) => {
-    if (!voiceOutputRef.current) { onDone?.(); return; }
-
-    // Stop any current audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
+  // ── Streaming TTS queue ───────────────────────────────────────────────────
+  // Pulls the next item from ttsQueueRef and plays it, then chains to itself.
+  const drainTtsQueue = useCallback(async () => {
+    if (isTtsPlayingRef.current) return;
+    if (ttsQueueRef.current.length === 0) {
+      if (ttsStreamDoneRef.current) {
+        setIsSpeaking(false);
+        ttsOnDoneRef.current?.();
+        ttsOnDoneRef.current = undefined;
+      }
+      return;
     }
 
-    setIsSpeaking(true);
+    if (!voiceOutputRef.current) {
+      ttsQueueRef.current = [];
+      setIsSpeaking(false);
+      ttsOnDoneRef.current?.();
+      ttsOnDoneRef.current = undefined;
+      return;
+    }
+
+    const text = ttsQueueRef.current.shift()!;
+    isTtsPlayingRef.current = true;
 
     try {
       const res = await fetch("/api/flo/speak", {
@@ -93,32 +112,47 @@ export default function FloClient({ userEmail, stats, services }: FloClientProps
       });
 
       if (!res.ok) throw new Error("TTS failed");
-
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audioRef.current = audio;
 
-      audio.onended = () => {
+      const onFinish = () => {
         URL.revokeObjectURL(url);
         audioRef.current = null;
-        setIsSpeaking(false);
-        onDone?.();
+        isTtsPlayingRef.current = false;
+        drainTtsQueue();
       };
-
-      audio.onerror = () => {
-        URL.revokeObjectURL(url);
-        audioRef.current = null;
-        setIsSpeaking(false);
-        onDone?.();
-      };
-
+      audio.onended = onFinish;
+      audio.onerror = onFinish;
       await audio.play();
     } catch {
-      setIsSpeaking(false);
-      onDone?.();
+      isTtsPlayingRef.current = false;
+      drainTtsQueue();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const enqueueTts = useCallback((text: string) => {
+    if (!text.trim() || !voiceOutputRef.current) return;
+    ttsQueueRef.current.push(text);
+    if (!isTtsPlayingRef.current) {
+      setIsSpeaking(true);
+      drainTtsQueue();
+    }
+  }, [drainTtsQueue]);
+
+  // ── Voice output via OpenAI TTS (single-shot, non-streaming) ─────────────
+  const speak = useCallback(async (text: string, onDone?: () => void) => {
+    if (!voiceOutputRef.current) { onDone?.(); return; }
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    ttsQueueRef.current = [text];
+    isTtsPlayingRef.current = false;
+    ttsStreamDoneRef.current = true;
+    ttsOnDoneRef.current = onDone;
+    setIsSpeaking(true);
+    drainTtsQueue();
+  }, [drainTtsQueue]);
 
   // ── Microphone ────────────────────────────────────────────────────────────
   const startListening = useCallback(() => {
@@ -182,6 +216,15 @@ export default function FloClient({ userEmail, stats, services }: FloClientProps
 
       setLoading(true);
 
+      // Reset TTS state for new response
+      pendingTtsRef.current = "";
+      ttsQueueRef.current = [];
+      isTtsPlayingRef.current = false;
+      ttsStreamDoneRef.current = false;
+      ttsOnDoneRef.current = undefined;
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      setIsSpeaking(false);
+
       const outgoing: Message = { role: "user", content: userContent };
       const updatedHistory = userContent ? [...history, outgoing] : history;
       if (userContent) setMessages(updatedHistory);
@@ -226,7 +269,19 @@ System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          full += decoder.decode(value, { stream: true });
+          const chunk = decoder.decode(value, { stream: true });
+          full += chunk;
+
+          // Detect complete sentences and enqueue TTS immediately
+          if (voiceOutputRef.current) {
+            pendingTtsRef.current += chunk;
+            const m = pendingTtsRef.current.match(/^([\s\S]*[.!?])\s+([\s\S]*)$/);
+            if (m) {
+              pendingTtsRef.current = m[2];
+              enqueueTts(m[1].trim());
+            }
+          }
+
           setMessages((prev) => [
             ...prev.slice(0, -1),
             { role: "assistant", content: full },
@@ -242,16 +297,31 @@ System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`
         setLoading(false);
       }
 
-      // Speak response, then resume mic if always-on
-      if (full && !full.startsWith("⚠️")) {
-        speak(full, () => {
+      // Mark stream done; speak any remaining text, then resume mic
+      ttsStreamDoneRef.current = true;
+      ttsOnDoneRef.current = () => {
+        if (micAlwaysOnRef.current) startListening();
+      };
+
+      if (full && !full.startsWith("⚠️") && voiceOutputRef.current) {
+        const remaining = pendingTtsRef.current.trim();
+        if (remaining) {
+          enqueueTts(remaining);
+        } else if (!isTtsPlayingRef.current && ttsQueueRef.current.length === 0) {
+          // Nothing was queued at all (very short response with no sentence boundary)
+          speak(full, () => { if (micAlwaysOnRef.current) startListening(); });
+        } else if (!isTtsPlayingRef.current) {
+          // Queue drained before stream ended — fire done callback now
+          setIsSpeaking(false);
           if (micAlwaysOnRef.current) startListening();
-        });
-      } else if (micAlwaysOnRef.current) {
+          ttsOnDoneRef.current = undefined;
+        }
+        // else: queue is still draining and onDone ref is set — it'll fire when done
+      } else if (!voiceOutputRef.current && micAlwaysOnRef.current) {
         startListening();
       }
     },
-    [stats, services, speak, startListening]
+    [stats, services, speak, enqueueTts, startListening]
   );
 
   // Keep a stable ref to sendMessage for use inside closures
@@ -300,6 +370,10 @@ System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`
 
   function stopSpeaking() {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    ttsQueueRef.current = [];
+    isTtsPlayingRef.current = false;
+    ttsStreamDoneRef.current = true;
+    ttsOnDoneRef.current = undefined;
     setIsSpeaking(false);
     if (micAlwaysOnRef.current) startListening();
   }

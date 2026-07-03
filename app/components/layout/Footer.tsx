@@ -33,6 +33,18 @@ export default function Footer() {
             >
               Contact
             </a>
+            <a
+              href="mailto:support@cg-workshop.com"
+              className="text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-950 dark:hover:text-zinc-50 transition-colors"
+            >
+              support@cg-workshop.com
+            </a>
+            <a
+              href="tel:+18012001605"
+              className="text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-950 dark:hover:text-zinc-50 transition-colors"
+            >
+              +1 (801) 200-1605
+            </a>
           </nav>
           <p className="text-xs text-zinc-400 dark:text-zinc-500">
             © {year} Common Ground Workshop

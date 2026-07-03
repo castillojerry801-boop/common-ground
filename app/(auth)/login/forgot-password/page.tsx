@@ -88,6 +88,15 @@ export default function ForgotPasswordPage() {
               >
                 Back to sign in
               </a>
+              <p className="text-center text-xs text-zinc-700">
+                Need help?{" "}
+                <a
+                  href="mailto:support@cg-workshop.com"
+                  className="text-zinc-500 hover:text-zinc-400 transition-colors duration-150"
+                >
+                  support@cg-workshop.com
+                </a>
+              </p>
             </form>
           </>
         )}
