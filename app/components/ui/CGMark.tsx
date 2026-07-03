@@ -16,7 +16,7 @@ function colorFilter(color: string): string | undefined {
     return undefined;
   }
   if (c === "white" || c === "#fff" || c === "#ffffff" || c === "#fafafa") {
-    return "brightness(0) invert(1)";
+    return "invert(1)";
   }
   // Amber (#f59e0b)
   if (c === "#f59e0b") {
