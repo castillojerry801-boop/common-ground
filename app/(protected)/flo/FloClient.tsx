@@ -64,8 +64,8 @@ export default function FloClient({ userEmail, stats, services }: FloClientProps
   const loadingRef = useRef(loading);
   loadingRef.current = loading;
 
-  // Streaming TTS queue
-  const ttsQueueRef = useRef<string[]>([]);
+  // Streaming TTS queue — stores pre-fetched blob promises so audio is ready immediately
+  const ttsQueueRef = useRef<Promise<Blob | null>[]>([]);
   const isTtsPlayingRef = useRef(false);
   const ttsStreamDoneRef = useRef(false);
   const ttsOnDoneRef = useRef<(() => void) | undefined>(undefined);
@@ -80,8 +80,15 @@ export default function FloClient({ userEmail, stats, services }: FloClientProps
     setSpeechSupported(ok);
   }, []);
 
+  const fetchAudioBlob = (text: string): Promise<Blob | null> =>
+    fetch("/api/flo/speak", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: cleanForSpeech(text) }),
+    }).then(r => r.ok ? r.blob() : null).catch(() => null);
+
   // ── Streaming TTS queue ───────────────────────────────────────────────────
-  // Pulls the next item from ttsQueueRef and plays it, then chains to itself.
+  // Awaits the next pre-fetched blob promise and plays it, then chains.
   const drainTtsQueue = useCallback(async () => {
     if (isTtsPlayingRef.current) return;
     if (ttsQueueRef.current.length === 0) {
@@ -101,18 +108,13 @@ export default function FloClient({ userEmail, stats, services }: FloClientProps
       return;
     }
 
-    const text = ttsQueueRef.current.shift()!;
+    const blobPromise = ttsQueueRef.current.shift()!;
     isTtsPlayingRef.current = true;
 
     try {
-      const res = await fetch("/api/flo/speak", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: cleanForSpeech(text) }),
-      });
+      const blob = await blobPromise; // resolves instantly if already prefetched
+      if (!blob) throw new Error("No blob");
 
-      if (!res.ok) throw new Error("TTS failed");
-      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audioRef.current = audio;
@@ -135,23 +137,26 @@ export default function FloClient({ userEmail, stats, services }: FloClientProps
 
   const enqueueTts = useCallback((text: string) => {
     if (!text.trim() || !voiceOutputRef.current) return;
-    ttsQueueRef.current.push(text);
+    // Fire fetch immediately so audio is ready before it's needed
+    ttsQueueRef.current.push(fetchAudioBlob(text));
     if (!isTtsPlayingRef.current) {
       setIsSpeaking(true);
       drainTtsQueue();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drainTtsQueue]);
 
   // ── Voice output via OpenAI TTS (single-shot, non-streaming) ─────────────
   const speak = useCallback(async (text: string, onDone?: () => void) => {
     if (!voiceOutputRef.current) { onDone?.(); return; }
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-    ttsQueueRef.current = [text];
+    ttsQueueRef.current = [fetchAudioBlob(text)];
     isTtsPlayingRef.current = false;
     ttsStreamDoneRef.current = true;
     ttsOnDoneRef.current = onDone;
     setIsSpeaking(true);
     drainTtsQueue();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drainTtsQueue]);
 
   // ── Microphone ────────────────────────────────────────────────────────────
@@ -218,7 +223,7 @@ export default function FloClient({ userEmail, stats, services }: FloClientProps
 
       // Reset TTS state for new response
       pendingTtsRef.current = "";
-      ttsQueueRef.current = [];
+      ttsQueueRef.current = [] as Promise<Blob | null>[];
       isTtsPlayingRef.current = false;
       ttsStreamDoneRef.current = false;
       ttsOnDoneRef.current = undefined;
