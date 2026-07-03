@@ -18,25 +18,32 @@ export function CGMark({ size = 40, color = "currentColor", className = "" }: CG
       className={className}
       aria-hidden="true"
     >
-      {/* C arc — large arc, open on the right between upper-right and lower-right */}
+      {/* Outer C ring — 270° arc, gap at upper-right to lower-right */}
       <path
-        d="M 80 24 A 40 40 0 1 0 80 76"
+        d="M 80.4 19.6 A 43 43 0 1 0 80.4 80.4"
         stroke={color}
-        strokeWidth="13"
+        strokeWidth="12"
         strokeLinecap="round"
       />
-      {/* G crossbar — horizontal bar extending inward from the right edge */}
+      {/* Inner G arc — concentric, same gap angle */}
       <path
-        d="M 80 50 L 54 50"
+        d="M 69.8 30.2 A 28 28 0 1 0 69.8 69.8"
         stroke={color}
-        strokeWidth="13"
+        strokeWidth="12"
         strokeLinecap="round"
       />
-      {/* G lower vertical — connects crossbar down to bottom of the opening */}
+      {/* G crossbar — extends leftward from the outer right edge */}
       <path
-        d="M 80 50 L 80 76"
+        d="M 80.4 50 L 54 50"
         stroke={color}
-        strokeWidth="13"
+        strokeWidth="12"
+        strokeLinecap="round"
+      />
+      {/* G vertical — drops from crossbar to lower gap */}
+      <path
+        d="M 80.4 50 L 80.4 80.4"
+        stroke={color}
+        strokeWidth="12"
         strokeLinecap="round"
       />
     </svg>
