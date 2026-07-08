@@ -20,6 +20,7 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/login/")) return true; // branded logins + forgot-password
   if (pathname.startsWith("/auth/")) return true;
   if (pathname.startsWith("/_next/")) return true;
+  if (pathname === "/sitemap.xml" || pathname === "/robots.txt") return true;
   if (/\.(ico|svg|png|jpg|jpeg|webp|woff2?)$/.test(pathname)) return true;
   return false;
 }
