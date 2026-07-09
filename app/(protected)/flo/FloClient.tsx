@@ -5,11 +5,24 @@ import { CGMark } from "@/app/components/ui/CGMark";
 
 type Message = { role: "assistant" | "user"; content: string };
 type ServiceStatus = { name: string; status: "healthy" | "degraded" | "down" };
+type ContactSubmission = {
+  id: string;
+  full_name: string;
+  business_name: string;
+  email: string;
+  phone: string | null;
+  business_type: string;
+  looking_for: string;
+  notes: string | null;
+  read: boolean;
+  created_at: string;
+};
 
 interface FloClientProps {
   userEmail: string;
-  stats: { userCount: number; orgCount: number };
+  stats: { userCount: number; orgCount: number; inquiryCount: number };
   services: ServiceStatus[];
+  recentInquiries: ContactSubmission[];
 }
 
 const STATUS_COLOR = {
@@ -39,7 +52,7 @@ function cleanForSpeech(text: string): string {
     .trim();
 }
 
-export default function FloClient({ userEmail, stats, services }: FloClientProps) {
+export default function FloClient({ userEmail, stats, services, recentInquiries }: FloClientProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -243,6 +256,7 @@ export default function FloClient({ userEmail, stats, services }: FloClientProps
         return `Current time: ${now}
 Platform users: ${stats.userCount}
 Organizations: ${stats.orgCount}
+Contact inquiries: ${stats.inquiryCount}
 Platform URL: cg-workshop.com — live
 System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`).join("\n")}`;
       };
@@ -462,16 +476,35 @@ System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`
 
             <section>
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-600 mb-3">Platform Stats</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="rounded-lg border border-zinc-800/60 bg-zinc-900/40 px-3 py-3">
                   <p className="text-2xl font-bold text-zinc-50 tracking-tight">{stats.userCount}</p>
-                  <p className="text-[11px] text-zinc-600 mt-0.5">Total users</p>
+                  <p className="text-[11px] text-zinc-600 mt-0.5">Users</p>
                 </div>
                 <div className="rounded-lg border border-zinc-800/60 bg-zinc-900/40 px-3 py-3">
                   <p className="text-2xl font-bold text-zinc-50 tracking-tight">{stats.orgCount}</p>
-                  <p className="text-[11px] text-zinc-600 mt-0.5">Organizations</p>
+                  <p className="text-[11px] text-zinc-600 mt-0.5">Orgs</p>
+                </div>
+                <div className="rounded-lg border border-zinc-800/60 bg-zinc-900/40 px-3 py-3">
+                  <p className="text-2xl font-bold text-amber-400 tracking-tight">{stats.inquiryCount}</p>
+                  <p className="text-[11px] text-zinc-600 mt-0.5">Inquiries</p>
                 </div>
               </div>
+            </section>
+
+            <section>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-600 mb-3">
+                Recent Inquiries
+              </p>
+              {recentInquiries.length === 0 ? (
+                <p className="text-xs text-zinc-700 py-2">No inquiries yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {recentInquiries.map((inq) => (
+                    <InquiryCard key={inq.id} inquiry={inq} />
+                  ))}
+                </div>
+              )}
             </section>
 
             <section>
@@ -603,6 +636,62 @@ System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+const BUSINESS_TYPE_LABEL: Record<string, string> = {
+  salon_spa: "Salon / Spa",
+  youth_sports: "Youth Sports",
+  other: "Other",
+};
+
+function InquiryCard({ inquiry }: { inquiry: ContactSubmission }) {
+  const [expanded, setExpanded] = useState(false);
+  const date = new Date(inquiry.created_at).toLocaleDateString("en-US", {
+    month: "short", day: "numeric",
+  });
+
+  return (
+    <div className="rounded-lg border border-zinc-800/60 bg-zinc-900/40 overflow-hidden">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full px-3 py-2.5 flex items-start justify-between gap-2 text-left hover:bg-zinc-800/30 transition-colors"
+      >
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-zinc-200 truncate">{inquiry.full_name}</p>
+          <p className="text-[11px] text-zinc-500 truncate">{inquiry.business_name}</p>
+        </div>
+        <div className="shrink-0 flex flex-col items-end gap-1">
+          <span className="text-[10px] text-zinc-600">{date}</span>
+          <span className="text-[10px] font-medium text-amber-500/80">
+            {BUSINESS_TYPE_LABEL[inquiry.business_type] ?? inquiry.business_type}
+          </span>
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="px-3 pb-3 pt-1 border-t border-zinc-800/60 space-y-2">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-zinc-600 mb-0.5">Looking for</p>
+            <p className="text-xs text-zinc-300 leading-relaxed">{inquiry.looking_for}</p>
+          </div>
+          {inquiry.notes && (
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-zinc-600 mb-0.5">Notes</p>
+              <p className="text-xs text-zinc-400 leading-relaxed">{inquiry.notes}</p>
+            </div>
+          )}
+          <div className="flex gap-3 pt-1">
+            <a href={`mailto:${inquiry.email}`} className="text-[11px] text-amber-500 hover:text-amber-400 transition-colors">
+              {inquiry.email}
+            </a>
+            {inquiry.phone && (
+              <span className="text-[11px] text-zinc-600">{inquiry.phone}</span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
