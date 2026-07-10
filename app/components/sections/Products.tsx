@@ -9,6 +9,7 @@ const products = [
       "Everything a youth sports organization needs to run — scheduling, rosters, payments, and communication — in one place.",
     available: true,
     href: "#",
+    external: false,
   },
   {
     icon: "💇",
@@ -18,6 +19,27 @@ const products = [
       "Built for the modern beauty professional. Booking, client management, and payments without the chaos.",
     available: true,
     href: "#",
+    external: false,
+  },
+  {
+    icon: "🏆",
+    name: "Burton Basketball Academy",
+    tagline: "Basketball Training & Development",
+    description:
+      "A dedicated platform for Burton Basketball Academy — connecting players, families, and coaches around the game.",
+    available: true,
+    href: "https://www.burtonbball.com",
+    external: true,
+  },
+  {
+    icon: "🤝",
+    name: "Mentoring Life Through Sports",
+    tagline: "Youth Mentorship Through Athletics",
+    description:
+      "Built for MLTSA — using the power of sports to guide, develop, and mentor young lives in the community.",
+    available: true,
+    href: "https://www.mltsa.com",
+    external: true,
   },
   {
     icon: null,
@@ -27,6 +49,7 @@ const products = [
       "We're building purpose-driven software for more professions. Every platform begins with listening first.",
     available: false,
     href: null,
+    external: false,
   },
 ];
 
@@ -47,7 +70,7 @@ export default function Products() {
           </p>
         </AnimateIn>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((product, i) => (
             <AnimateIn key={product.name} delay={i * 100} className="h-full">
               <div
@@ -89,9 +112,10 @@ export default function Products() {
                   {product.available && product.href ? (
                     <a
                       href={product.href}
+                      {...(product.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                       className="text-sm font-medium text-zinc-950 dark:text-zinc-50 flex items-center gap-1.5 group-hover:gap-2.5 transition-all duration-150"
                     >
-                      Learn more
+                      {product.external ? "Visit site" : "Learn more"}
                       <span aria-hidden="true">→</span>
                     </a>
                   ) : (
