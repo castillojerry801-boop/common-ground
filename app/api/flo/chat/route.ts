@@ -239,9 +239,8 @@ async function webSearch(query: string): Promise<string> {
   }
 }
 
-async function deleteInquiry(id: string): Promise<string> {
+async function deleteInquiry(id: string, supabase: Awaited<ReturnType<typeof createClient>>): Promise<string> {
   try {
-    const supabase = await createClient();
     const { error } = await supabase
       .from("contact_submissions")
       .delete()
@@ -253,12 +252,12 @@ async function deleteInquiry(id: string): Promise<string> {
   }
 }
 
-async function executeTool(name: string, args: string): Promise<string> {
+async function executeTool(name: string, args: string, supabase: Awaited<ReturnType<typeof createClient>>): Promise<string> {
   const parsed = JSON.parse(args);
   if (name === "get_weather") return getWeather(parsed.location);
   if (name === "web_search") return webSearch(parsed.query);
   if (name === "check_deployments") return checkDeployments();
-  if (name === "delete_inquiry") return deleteInquiry(parsed.id);
+  if (name === "delete_inquiry") return deleteInquiry(parsed.id, supabase);
   return `Unknown tool: ${name}`;
 }
 
@@ -874,6 +873,9 @@ export async function POST(request: Request) {
     return Response.json({ error: "OPENAI_API_KEY not configured" }, { status: 500 });
   }
 
+  // Create Supabase client here — cookies() only works at the handler level, not inside ReadableStream
+  const supabase = await createClient();
+
   const { messages, context, localDate } = await request.json();
   const systemContent = context
     ? `${SYSTEM_PROMPT}\n\nCurrent platform context:\n${context}`
@@ -933,7 +935,7 @@ export async function POST(request: Request) {
         // Execute all requested tools in parallel
         const toolCalls = Object.values(toolMap);
         const toolResults = await Promise.all(
-          toolCalls.map((tc) => executeTool(tc.name, tc.args))
+          toolCalls.map((tc) => executeTool(tc.name, tc.args, supabase))
         );
 
         // Build the conversation with tool results
