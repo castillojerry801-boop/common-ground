@@ -32,7 +32,7 @@ export default async function FloPage() {
       supabase.from("organizations").select("*", { count: "exact", head: true }),
       supabase
         .from("contact_submissions")
-        .select("id, full_name, business_name, email, phone, business_type, looking_for, notes, read, created_at")
+        .select("id, full_name, business_name, email, phone, business_type, business_description, looking_for, notes, read, created_at")
         .order("created_at", { ascending: false })
         .limit(10),
       supabase.from("contact_submissions").select("*", { count: "exact", head: true }),

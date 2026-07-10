@@ -5,8 +5,14 @@ import { CGLogoStacked } from "@/app/components/ui/CGMark";
 import Link from "next/link";
 
 const BUSINESS_TYPES = [
-  { value: "salon_spa", label: "Salon / Spa" },
+  { value: "salon_spa_beauty", label: "Salon / Spa / Beauty" },
+  { value: "trainer_coach", label: "Trainer / Coach" },
   { value: "youth_sports", label: "Youth Sports Organization" },
+  { value: "restaurant_bar_catering", label: "Restaurant / Bar / Catering" },
+  { value: "contractor_home_service", label: "Contractor / Home Service" },
+  { value: "retail_local_shop", label: "Retail / Local Shop" },
+  { value: "nonprofit_community", label: "Nonprofit / Community Group" },
+  { value: "event_camp_clinic", label: "Event / Camp / Clinic" },
   { value: "other", label: "Other" },
 ];
 
@@ -22,6 +28,7 @@ export default function ContactForm() {
     email: "",
     phone: "",
     business_type: "",
+    business_description: "",
     looking_for: "",
     notes: "",
   });
@@ -29,16 +36,23 @@ export default function ContactForm() {
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
+  const isOther = fields.business_type === "other";
+
   function set(key: keyof typeof fields) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setFields((prev) => ({ ...prev, [key]: e.target.value }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
+    if (isOther && !fields.business_description.trim()) {
+      setError("Please tell us about your business.");
+      return;
+    }
+
+    setLoading(true);
     try {
       const res = await fetch("/api/contact", {
         method: "POST",
@@ -177,7 +191,24 @@ export default function ContactForm() {
             </select>
           </div>
 
-          {/* What are you looking for — textarea */}
+          {/* Tell us about your business — only shown when Other is selected */}
+          {isOther && (
+            <div className="flex flex-col gap-2">
+              <label htmlFor="business_description" className={labelClass}>
+                Tell us about your business
+              </label>
+              <textarea
+                id="business_description"
+                rows={4}
+                placeholder="Describe what your business does, who you serve, how you operate — anything that helps us understand what you do."
+                value={fields.business_description}
+                onChange={set("business_description")}
+                className={`${inputClass} resize-none leading-relaxed`}
+              />
+            </div>
+          )}
+
+          {/* What are you looking for */}
           <div className="flex flex-col gap-2">
             <label htmlFor="looking_for" className={labelClass}>What are you looking for?</label>
             <textarea
@@ -191,7 +222,7 @@ export default function ContactForm() {
             />
           </div>
 
-          {/* Anything else — textarea */}
+          {/* Anything else */}
           <div className="flex flex-col gap-2">
             <label htmlFor="notes" className={labelClass}>
               Anything else? <span className="text-zinc-700 normal-case tracking-normal">optional</span>

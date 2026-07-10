@@ -12,6 +12,7 @@ type ContactSubmission = {
   email: string;
   phone: string | null;
   business_type: string;
+  business_description: string | null;
   looking_for: string;
   notes: string | null;
   read: boolean;
@@ -641,8 +642,14 @@ System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`
 }
 
 const BUSINESS_TYPE_LABEL: Record<string, string> = {
-  salon_spa: "Salon / Spa",
+  salon_spa_beauty: "Salon / Spa / Beauty",
+  trainer_coach: "Trainer / Coach",
   youth_sports: "Youth Sports",
+  restaurant_bar_catering: "Restaurant / Bar / Catering",
+  contractor_home_service: "Contractor / Home Service",
+  retail_local_shop: "Retail / Local Shop",
+  nonprofit_community: "Nonprofit / Community",
+  event_camp_clinic: "Event / Camp / Clinic",
   other: "Other",
 };
 
@@ -672,13 +679,19 @@ function InquiryCard({ inquiry }: { inquiry: ContactSubmission }) {
 
       {expanded && (
         <div className="px-3 pb-3 pt-1 border-t border-zinc-800/60 space-y-2">
+          {inquiry.business_description && (
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-zinc-600 mb-0.5">About their business</p>
+              <p className="text-xs text-zinc-400 leading-relaxed">{inquiry.business_description}</p>
+            </div>
+          )}
           <div>
             <p className="text-[10px] uppercase tracking-widest text-zinc-600 mb-0.5">Looking for</p>
             <p className="text-xs text-zinc-300 leading-relaxed">{inquiry.looking_for}</p>
           </div>
           {inquiry.notes && (
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-zinc-600 mb-0.5">Notes</p>
+              <p className="text-[10px] uppercase tracking-widest text-zinc-600 mb-0.5">Anything else</p>
               <p className="text-xs text-zinc-400 leading-relaxed">{inquiry.notes}</p>
             </div>
           )}

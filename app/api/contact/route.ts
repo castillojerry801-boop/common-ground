@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-const BUSINESS_TYPES = ["salon_spa", "youth_sports", "other"];
+const BUSINESS_TYPES = [
+  "salon_spa_beauty",
+  "trainer_coach",
+  "youth_sports",
+  "restaurant_bar_catering",
+  "contractor_home_service",
+  "retail_local_shop",
+  "nonprofit_community",
+  "event_camp_clinic",
+  "other",
+];
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
 
-  const { full_name, business_name, email, phone, business_type, looking_for, notes } = body;
+  const { full_name, business_name, email, phone, business_type, business_description, looking_for, notes } = body;
 
   if (!full_name?.trim())
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -27,6 +37,7 @@ export async function POST(request: NextRequest) {
     email: email.trim().toLowerCase(),
     phone: phone?.trim() || null,
     business_type,
+    business_description: business_description?.trim() || null,
     looking_for: looking_for.trim(),
     notes: notes?.trim() || null,
   });
