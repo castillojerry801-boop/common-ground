@@ -8,7 +8,7 @@ const products = [
     description:
       "Everything a youth sports organization needs to run — scheduling, rosters, payments, and communication — in one place.",
     available: true,
-    href: "https://www.gameflohq.com",
+    href: "https://app.gameflohq.com",
     external: true,
   },
   {
@@ -38,7 +38,7 @@ const products = [
     description:
       "Built for MLTSA, a nonprofit organization — using the power of sports to guide, develop, and mentor young lives in the community.",
     available: true,
-    href: "https://www.mltsa.com",
+    href: "https://www.mltsa.org",
     external: true,
   },
   {
