@@ -53,7 +53,12 @@ function cleanForSpeech(text: string): string {
     .trim();
 }
 
-export default function FloClient({ userEmail, stats, services, recentInquiries }: FloClientProps) {
+export default function FloClient({ userEmail, stats, services, recentInquiries: initialInquiries }: FloClientProps) {
+  const [inquiries, setInquiries] = useState(initialInquiries);
+
+  function removeInquiry(id: string) {
+    setInquiries((prev) => prev.filter((i) => i.id !== id));
+  }
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -254,10 +259,17 @@ export default function FloClient({ userEmail, stats, services, recentInquiries 
           weekday: "long", year: "numeric", month: "long",
           day: "numeric", hour: "2-digit", minute: "2-digit",
         });
+        const inquiryList = inquiries.length > 0
+          ? inquiries.map((inq) =>
+              `  [${inq.id}] ${inq.full_name} | ${inq.business_name} | ${BUSINESS_TYPE_LABEL[inq.business_type] ?? inq.business_type} | ${new Date(inq.created_at).toLocaleDateString()}`
+            ).join("\n")
+          : "  None";
+
         return `Current time: ${now}
 Platform users: ${stats.userCount}
 Organizations: ${stats.orgCount}
 Contact inquiries: ${stats.inquiryCount}
+Recent inquiries (id | name | business | type | date):\n${inquiryList}
 Platform URL: cg-workshop.com — live
 System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`).join("\n")}`;
       };
@@ -497,12 +509,12 @@ System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-600 mb-3">
                 Recent Inquiries
               </p>
-              {recentInquiries.length === 0 ? (
+              {inquiries.length === 0 ? (
                 <p className="text-xs text-zinc-700 py-2">No inquiries yet.</p>
               ) : (
                 <div className="space-y-2">
-                  {recentInquiries.map((inq) => (
-                    <InquiryCard key={inq.id} inquiry={inq} />
+                  {inquiries.map((inq) => (
+                    <InquiryCard key={inq.id} inquiry={inq} onDelete={removeInquiry} />
                   ))}
                 </div>
               )}
@@ -653,11 +665,25 @@ const BUSINESS_TYPE_LABEL: Record<string, string> = {
   other: "Other",
 };
 
-function InquiryCard({ inquiry }: { inquiry: ContactSubmission }) {
+function InquiryCard({ inquiry, onDelete }: { inquiry: ContactSubmission; onDelete: (id: string) => void }) {
   const [expanded, setExpanded] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const date = new Date(inquiry.created_at).toLocaleDateString("en-US", {
     month: "short", day: "numeric",
   });
+
+  async function handleDelete() {
+    if (!confirming) { setConfirming(true); return; }
+    setDeleting(true);
+    try {
+      await fetch(`/api/contact/${inquiry.id}`, { method: "DELETE" });
+      onDelete(inquiry.id);
+    } finally {
+      setDeleting(false);
+      setConfirming(false);
+    }
+  }
 
   return (
     <div className="rounded-lg border border-zinc-800/60 bg-zinc-900/40 overflow-hidden">
@@ -695,13 +721,24 @@ function InquiryCard({ inquiry }: { inquiry: ContactSubmission }) {
               <p className="text-xs text-zinc-400 leading-relaxed">{inquiry.notes}</p>
             </div>
           )}
-          <div className="flex gap-3 pt-1">
-            <a href={`mailto:${inquiry.email}`} className="text-[11px] text-amber-500 hover:text-amber-400 transition-colors">
-              {inquiry.email}
-            </a>
-            {inquiry.phone && (
-              <span className="text-[11px] text-zinc-600">{inquiry.phone}</span>
-            )}
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <div className="flex gap-3">
+              <a href={`mailto:${inquiry.email}`} className="text-[11px] text-amber-500 hover:text-amber-400 transition-colors">
+                {inquiry.email}
+              </a>
+              {inquiry.phone && (
+                <span className="text-[11px] text-zinc-600">{inquiry.phone}</span>
+              )}
+            </div>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className={`text-[11px] transition-colors disabled:opacity-40 ${
+                confirming ? "text-red-400 hover:text-red-300" : "text-zinc-700 hover:text-red-400"
+              }`}
+            >
+              {deleting ? "Deleting…" : confirming ? "Confirm delete" : "Delete"}
+            </button>
           </div>
         </div>
       )}

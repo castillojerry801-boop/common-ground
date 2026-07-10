@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { createClient } from "@/lib/supabase/server";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -37,6 +38,24 @@ const FLO_TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
       description:
         "Check the live build and deployment status of all Common Ground sites (Common Ground Workshop and GameFloHQ). Returns current status, last deploy time, and whether the latest build succeeded or failed. Use this when Jerry asks about site status, build status, or where things stand.",
       parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_inquiry",
+      description:
+        "Delete a contact form inquiry from the database by its ID. Use this when Jerry asks to delete or remove an inquiry. The inquiry IDs are provided in the platform context.",
+      parameters: {
+        type: "object",
+        properties: {
+          id: {
+            type: "string",
+            description: "The UUID of the contact submission to delete.",
+          },
+        },
+        required: ["id"],
+      },
     },
   },
   {
@@ -220,11 +239,26 @@ async function webSearch(query: string): Promise<string> {
   }
 }
 
+async function deleteInquiry(id: string): Promise<string> {
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("contact_submissions")
+      .delete()
+      .eq("id", id);
+    if (error) return `Failed to delete inquiry: ${error.message}`;
+    return `Inquiry ${id} deleted successfully.`;
+  } catch (err) {
+    return `Error deleting inquiry: ${String(err)}`;
+  }
+}
+
 async function executeTool(name: string, args: string): Promise<string> {
   const parsed = JSON.parse(args);
   if (name === "get_weather") return getWeather(parsed.location);
   if (name === "web_search") return webSearch(parsed.query);
   if (name === "check_deployments") return checkDeployments();
+  if (name === "delete_inquiry") return deleteInquiry(parsed.id);
   return `Unknown tool: ${name}`;
 }
 
