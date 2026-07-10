@@ -8,8 +8,8 @@ const products = [
     description:
       "Everything a youth sports organization needs to run — scheduling, rosters, payments, and communication — in one place.",
     available: true,
-    href: "#",
-    external: false,
+    href: "https://www.gameflohq.com",
+    external: true,
   },
   {
     icon: "💇",
