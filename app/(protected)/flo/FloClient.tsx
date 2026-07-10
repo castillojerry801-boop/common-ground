@@ -677,11 +677,14 @@ function InquiryCard({ inquiry, onDelete }: { inquiry: ContactSubmission; onDele
     if (!confirming) { setConfirming(true); return; }
     setDeleting(true);
     try {
-      await fetch(`/api/contact/${inquiry.id}`, { method: "DELETE" });
-      onDelete(inquiry.id);
+      const res = await fetch(`/api/contact/${inquiry.id}`, { method: "DELETE" });
+      if (res.ok) {
+        onDelete(inquiry.id);
+      } else {
+        setConfirming(false);
+      }
     } finally {
       setDeleting(false);
-      setConfirming(false);
     }
   }
 
