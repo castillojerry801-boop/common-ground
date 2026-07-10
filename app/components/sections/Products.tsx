@@ -36,7 +36,7 @@ const products = [
     name: "Mentoring Life Through Sports",
     tagline: "Youth Mentorship Through Athletics",
     description:
-      "Built for MLTSA — using the power of sports to guide, develop, and mentor young lives in the community.",
+      "Built for MLTSA, a nonprofit organization — using the power of sports to guide, develop, and mentor young lives in the community.",
     available: true,
     href: "https://www.mltsa.com",
     external: true,
