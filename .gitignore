@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# private toolbox (internal use only — never push to GitHub)
+/toolbox/
