@@ -41,11 +41,11 @@ export default function Included() {
             What&apos;s Included
           </p>
           <h2 className="text-4xl sm:text-5xl font-bold tracking-tight text-zinc-50 leading-tight mb-5 max-w-2xl">
-            Everything you need to launch — and grow.
+            Everything your business needs — from your first website to your full online presence.
           </h2>
           <p className="text-lg text-zinc-400 max-w-xl mb-20 leading-relaxed">
             We handle the full setup so you can focus on running your business.
-            Every engagement starts with the foundation. Add what you need from there.
+            Every website engagement starts with the foundation. Add what you need from there.
           </p>
         </AnimateIn>
 

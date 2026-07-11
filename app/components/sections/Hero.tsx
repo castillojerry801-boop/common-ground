@@ -36,7 +36,7 @@ export default function Hero() {
             >
               <div className="w-6 h-px bg-amber-500" aria-hidden="true" />
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 dark:text-amber-500">
-                Common Ground Workshop
+                Common Ground Workshop · Layton, Utah
               </p>
             </div>
 
@@ -44,16 +44,17 @@ export default function Hero() {
               className="hero-in text-5xl sm:text-7xl lg:text-[5.5rem] font-bold tracking-tight text-zinc-950 dark:text-zinc-50 leading-[1.06] mb-8"
               style={{ animationDelay: "120ms" }}
             >
-              We Build
-              <br className="hidden sm:block" /> With Purpose.
+              Web Design
+              <br className="hidden sm:block" /> Built With Purpose.
             </h1>
 
             <p
               className="hero-in text-xl sm:text-2xl text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-xl mb-14"
               style={{ animationDelay: "240ms" }}
             >
-              We create software that helps professionals spend less time
-              managing work and more time doing what they love.
+              We build custom websites for local businesses across Utah — so
+              you can spend less time managing your online presence and more
+              time doing the work you love.
             </p>
 
             <div

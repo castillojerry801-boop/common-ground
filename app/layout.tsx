@@ -15,19 +15,23 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://cg-workshop.com"),
   title: {
-    default: "Common Ground Workshop — Professional Software Built with Purpose",
+    default: "Common Ground Workshop — Web Design for Small Businesses in Utah",
     template: "%s | Common Ground Workshop",
   },
   description:
-    "Common Ground Workshop builds profession-specific software for small businesses — scheduling, client management, payments, and more. Built with purpose. Built for you.",
+    "Common Ground Workshop builds custom websites for small businesses across Utah — from Logan to St. George. Domain, email, website, and Google Business Profile setup. Built with purpose.",
   keywords: [
-    "business software",
-    "small business tools",
-    "appointment scheduling",
-    "client management software",
-    "youth sports management",
-    "beauty business software",
-    "Utah software company",
+    "web design Utah",
+    "website design Utah",
+    "custom website design Utah",
+    "web designer Utah",
+    "small business website Utah",
+    "website design Layton Utah",
+    "website design Salt Lake City",
+    "website design Logan Utah",
+    "website design St George Utah",
+    "web design small business",
+    "local business website Utah",
     "Common Ground Workshop",
   ],
   authors: [{ name: "Common Ground Workshop" }],
@@ -36,9 +40,9 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://cg-workshop.com",
     siteName: "Common Ground Workshop",
-    title: "Common Ground Workshop — Professional Software Built with Purpose",
+    title: "Common Ground Workshop — Web Design for Small Businesses in Utah",
     description:
-      "Profession-specific software for small businesses. Scheduling, client management, payments, and more — built with purpose, built for you.",
+      "Custom websites for small businesses across Utah — from Logan to St. George. Domain, email, website, and Google Business Profile. Built with purpose.",
     images: [
       {
         url: "/cg-brand.png",
@@ -50,9 +54,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Common Ground Workshop — Professional Software Built with Purpose",
+    title: "Common Ground Workshop — Web Design for Small Businesses in Utah",
     description:
-      "Profession-specific software for small businesses. Built with purpose, built for you.",
+      "Custom websites for small businesses across Utah. Domain, email, website, and Google Business Profile setup. Built with purpose.",
     images: ["/cg-brand.png"],
   },
   robots: {

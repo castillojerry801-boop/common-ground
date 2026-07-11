@@ -13,14 +13,15 @@ export default function Contact() {
 
           <AnimateIn delay={100}>
             <h2 className="text-5xl sm:text-6xl font-bold tracking-tight text-zinc-50 leading-[1.06] mb-8">
-              Ready to simplify how you operate?
+              Ready to get your business online?
             </h2>
           </AnimateIn>
 
           <AnimateIn delay={200}>
             <p className="text-xl text-zinc-400 leading-relaxed mb-12 max-w-xl">
-              If you&apos;re a business looking to reduce the friction in how you
-              work, we&apos;d love to hear from you.
+              Working with businesses from Logan to St. George. If you&apos;re
+              ready to launch or upgrade your website, we&apos;d love to hear
+              from you.
             </p>
           </AnimateIn>
 
