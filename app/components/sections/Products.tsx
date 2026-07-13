@@ -42,6 +42,16 @@ const products = [
     external: true,
   },
   {
+    icon: "🧒",
+    name: "Brilliant Beginnings",
+    tagline: "Childcare & Early Learning",
+    description:
+      "A platform built for Brilliant Beginnings Childcare in Utah — helping families and caregivers stay connected around early childhood care and development.",
+    available: true,
+    href: "https://brilliantbeginningsutah.com",
+    external: true,
+  },
+  {
     icon: null,
     name: "More Coming",
     tagline: "Expanding the Portfolio",
