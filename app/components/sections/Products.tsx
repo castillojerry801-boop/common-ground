@@ -2,7 +2,6 @@ import AnimateIn from "@/app/components/ui/AnimateIn";
 
 const products = [
   {
-    icon: "🏀",
     name: "GameFloHQ",
     tagline: "Youth Sports Operating System",
     description:
@@ -12,17 +11,15 @@ const products = [
     external: true,
   },
   {
-    icon: "💇",
-    name: "BeautyBook",
+    name: "Elevated Beauty Studio",
     tagline: "Beauty Business Operating System",
     description:
-      "Built for the modern beauty professional. Booking, client management, and payments without the chaos.",
+      "A platform built for Elevated Beauty Studio — giving beauty professionals the tools to manage bookings, clients, and their business with ease.",
     available: true,
-    href: "#",
-    external: false,
+    href: "https://www.elevatedbeautystudio.com",
+    external: true,
   },
   {
-    icon: "🏆",
     name: "Burton Basketball Academy",
     tagline: "Basketball Training & Development",
     description:
@@ -32,7 +29,6 @@ const products = [
     external: true,
   },
   {
-    icon: "🤝",
     name: "Mentoring Life Through Sports",
     tagline: "Youth Mentorship Through Athletics",
     description:
@@ -42,7 +38,6 @@ const products = [
     external: true,
   },
   {
-    icon: "🧒",
     name: "Brilliant Beginnings",
     tagline: "Childcare & Early Learning",
     description:
@@ -52,7 +47,6 @@ const products = [
     external: true,
   },
   {
-    icon: null,
     name: "More Coming",
     tagline: "Expanding the Portfolio",
     description:
@@ -94,19 +88,7 @@ export default function Products() {
                 {product.available && (
                   <div className="h-[3px] w-full bg-gradient-to-r from-amber-500 to-amber-400/60 flex-shrink-0" />
                 )}
-                <div className={`flex flex-col gap-6 flex-1 px-8 pb-8 ${product.available ? "" : "pt-8"}`}>
-                  <div className="text-4xl leading-none">
-                    {product.icon ? (
-                      <span role="img" aria-label={product.name}>
-                        {product.icon}
-                      </span>
-                    ) : (
-                      <div className="w-11 h-11 rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 flex items-center justify-center text-zinc-400 dark:text-zinc-600 text-xl font-light">
-                        +
-                      </div>
-                    )}
-                  </div>
-
+                <div className="flex flex-col gap-6 flex-1 px-8 pb-8 pt-8">
                   <div className="flex flex-col gap-2 flex-1">
                     <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
                       {product.tagline}
@@ -125,7 +107,7 @@ export default function Products() {
                       {...(product.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                       className="text-sm font-medium text-zinc-950 dark:text-zinc-50 flex items-center gap-1.5 group-hover:gap-2.5 transition-all duration-150"
                     >
-                      {product.external ? "Visit site" : "Learn more"}
+                      Visit site
                       <span aria-hidden="true">→</span>
                     </a>
                   ) : (
