@@ -8,6 +8,7 @@ const products = [
       "Everything a youth sports organization needs to run — scheduling, rosters, payments, and communication — in one place.",
     available: true,
     href: "https://app.gameflohq.com",
+    favicon: "app.gameflohq.com",
     external: true,
   },
   {
@@ -17,6 +18,7 @@ const products = [
       "A platform built for Elevated Beauty Studio — giving beauty professionals the tools to manage bookings, clients, and their business with ease.",
     available: true,
     href: "https://www.elevatedbeautystudio.com",
+    favicon: "www.elevatedbeautystudio.com",
     external: true,
   },
   {
@@ -26,6 +28,7 @@ const products = [
       "A dedicated platform for Burton Basketball Academy — connecting players, families, and coaches around the game.",
     available: true,
     href: "https://www.burtonbball.com",
+    favicon: "www.burtonbball.com",
     external: true,
   },
   {
@@ -35,6 +38,7 @@ const products = [
       "Built for MLTSA, a nonprofit organization — using the power of sports to guide, develop, and mentor young lives in the community.",
     available: true,
     href: "https://www.mltsa.org",
+    favicon: "www.mltsa.org",
     external: true,
   },
   {
@@ -44,6 +48,7 @@ const products = [
       "A platform built for Brilliant Beginnings Childcare in Utah — helping families and caregivers stay connected around early childhood care and development.",
     available: true,
     href: "https://brilliantbeginningsutah.com",
+    favicon: "brilliantbeginningsutah.com",
     external: true,
   },
   {
@@ -53,6 +58,7 @@ const products = [
       "We're building purpose-driven software for more professions. Every platform begins with listening first.",
     available: false,
     href: null,
+    favicon: null,
     external: false,
   },
 ];
@@ -89,6 +95,19 @@ export default function Products() {
                   <div className="h-[3px] w-full bg-gradient-to-r from-amber-500 to-amber-400/60 flex-shrink-0" />
                 )}
                 <div className="flex flex-col gap-6 flex-1 px-8 pb-8 pt-8">
+                  {product.favicon ? (
+                    <img
+                      src={`https://www.google.com/s2/favicons?sz=64&domain=${product.favicon}`}
+                      alt={product.name}
+                      width={32}
+                      height={32}
+                      className="rounded-md"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-md border-2 border-dashed border-zinc-300 dark:border-zinc-700 flex items-center justify-center text-zinc-400 dark:text-zinc-600 text-sm font-light">
+                      +
+                    </div>
+                  )}
                   <div className="flex flex-col gap-2 flex-1">
                     <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
                       {product.tagline}
