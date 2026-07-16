@@ -74,6 +74,7 @@ export default function FloClient({ userEmail, stats, services, recentInquiries:
   const inputRef = useRef<HTMLInputElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
@@ -191,20 +192,32 @@ export default function FloClient({ userEmail, stats, services, recentInquiries:
     recognitionRef.current?.abort();
 
     const recognition = new SR();
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
 
     recognition.onresult = (event: {
       results: { isFinal: boolean; [i: number]: { transcript: string } }[];
     }) => {
+      // Reset silence timer on every new speech input
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+
       const transcript = Array.from(event.results)
         .map((r) => r[0].transcript)
         .join("");
       setInput(transcript);
+
+      // Stop and send after 2.5s of silence so natural pauses don't cut off mid-thought
+      silenceTimerRef.current = setTimeout(() => {
+        recognitionRef.current?.stop();
+      }, 2500);
     };
 
     recognition.onend = () => {
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
       setIsListening(false);
       setInput((current) => {
         const text = current.trim();
@@ -228,6 +241,10 @@ export default function FloClient({ userEmail, stats, services, recentInquiries:
   }, [speechSupported]);
 
   const stopListening = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
     recognitionRef.current?.stop();
     setIsListening(false);
   }, []);
