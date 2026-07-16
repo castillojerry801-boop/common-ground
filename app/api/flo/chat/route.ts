@@ -1,16 +1,12 @@
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
+import { cgProjects } from "@/data/cg-projects";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
 // ── Tools available to FLO ────────────────────────────────────────────────────
-
-const CG_SITES = [
-  { name: "Common Ground Workshop", url: "https://www.cg-workshop.com" },
-  { name: "GameFloHQ", url: "https://app.gameflohq.com" },
-];
 
 const FLO_TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
   {
@@ -37,6 +33,15 @@ const FLO_TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
       name: "check_deployments",
       description:
         "Check the live build and deployment status of all Common Ground sites (Common Ground Workshop and GameFloHQ). Returns current status, last deploy time, and whether the latest build succeeded or failed. Use this when Jerry asks about site status, build status, or where things stand.",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "check_site_health",
+      description:
+        "Ping all known Common Ground client and internal sites to check if they are up and responding. Returns live HTTP status for each site. Use this during morning briefs, when Jerry asks how the sites are doing, or whenever site health is relevant.",
       parameters: { type: "object", properties: {}, required: [] },
     },
   },
@@ -207,6 +212,48 @@ async function checkDeployments(): Promise<string> {
   }
 }
 
+async function checkSiteHealth(): Promise<string> {
+  const liveSites = cgProjects.filter((p) => p.status === "live" && p.url);
+
+  const results = await Promise.all(
+    liveSites.map(async (project) => {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(project.url!, {
+          method: "HEAD",
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        clearTimeout(timeout);
+        return {
+          name: project.name,
+          client: project.client,
+          url: project.url,
+          status: res.ok ? "up" : "degraded",
+          http_status: res.status,
+        };
+      } catch {
+        return {
+          name: project.name,
+          client: project.client,
+          url: project.url,
+          status: "down",
+          http_status: null,
+        };
+      }
+    })
+  );
+
+  const inDev = cgProjects.filter((p) => p.status === "in-development");
+
+  return JSON.stringify({
+    live_sites: results,
+    in_development: inDev.map((p) => ({ name: p.name, client: p.client, notes: p.notes })),
+    checked_at: new Date().toISOString(),
+  });
+}
+
 async function webSearch(query: string): Promise<string> {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) return "Web search is not configured yet. TAVILY_API_KEY is missing.";
@@ -257,6 +304,7 @@ async function executeTool(name: string, args: string, supabase: Awaited<ReturnT
   if (name === "get_weather") return getWeather(parsed.location);
   if (name === "web_search") return webSearch(parsed.query);
   if (name === "check_deployments") return checkDeployments();
+  if (name === "check_site_health") return checkSiteHealth();
   if (name === "delete_inquiry") return deleteInquiry(parsed.id, supabase);
   return `Unknown tool: ${name}`;
 }
@@ -681,18 +729,26 @@ Always use Mountain Standard Time (MST / UTC-7) as the default timezone for Jerr
 When times are mentioned convert them to MST unless Jerry asks otherwise.
 
 -------------------------------------------------------
-COMMON GROUND SITES
+ALL COMMON GROUND PROJECTS
 -------------------------------------------------------
 
-Common Ground Workshop — www.cg-workshop.com (live)
+${cgProjects.map((p) =>
+  `${p.name} (${p.client})
+  Status: ${p.status}
+  Type: ${p.type}
+  URL: ${p.url ?? "Not yet deployed — localhost only"}
+  ${p.notes ? `Notes: ${p.notes}` : ""}`
+).join("\n\n")}
 
-FLO — built into Common Ground Workshop
+-------------------------------------------------------
 
-GameFloHQ — app.gameflohq.com (live)
+When Jerry asks about site health or how sites are doing — call check_site_health immediately.
 
-CG Scheduler — in development
+When Jerry asks about build or deployment status — call check_deployments immediately.
 
-When Jerry asks about site status, build status, or where things stand — call check_deployments immediately. Do not ask. Just check and report.
+For in-development projects with no URL: acknowledge they exist, report from the registry above, and note they are not yet live. You cannot ping localhost.
+
+Always proactively mention in-development projects during morning briefs so Jerry stays aware of work in progress.
 
 -------------------------------------------------------
 BUSINESS OPERATIONS
