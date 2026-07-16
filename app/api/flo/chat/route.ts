@@ -1,6 +1,5 @@
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
-import { cgProjects } from "@/data/cg-projects";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -43,6 +42,50 @@ const FLO_TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
       description:
         "Ping all known Common Ground client and internal sites to check if they are up and responding. Returns live HTTP status for each site. Use this during morning briefs, when Jerry asks how the sites are doing, or whenever site health is relevant.",
       parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "add_project",
+      description:
+        "Add a new project to the Common Ground projects registry. Use this when Jerry mentions he is starting a new build or working on a new site for a client.",
+      parameters: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "Short kebab-case identifier, e.g. 'acme-plumbing'" },
+          name: { type: "string", description: "Full project name, e.g. 'Acme Plumbing'" },
+          client: { type: "string", description: "Who the site is for, e.g. 'Acme Plumbing Co.'" },
+          type: { type: "string", description: "Type of site, e.g. 'Local service business', 'Nonprofit', 'Sports organization'" },
+          status: { type: "string", enum: ["live", "in-development", "paused", "planning"], description: "Current status of the project" },
+          url: { type: "string", description: "Live URL if deployed, omit if still in development" },
+          github: { type: "string", description: "GitHub repo name if known" },
+          notes: { type: "string", description: "Anything relevant FLO should know about this project" },
+        },
+        required: ["id", "name", "client", "type", "status"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_project",
+      description:
+        "Update an existing project in the registry — change its status, add a live URL when it launches, update notes, etc. Use this when Jerry says a site went live, is paused, or needs any detail changed.",
+      parameters: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "The project ID to update" },
+          name: { type: "string" },
+          client: { type: "string" },
+          type: { type: "string" },
+          status: { type: "string", enum: ["live", "in-development", "paused", "planning"] },
+          url: { type: "string" },
+          github: { type: "string" },
+          notes: { type: "string" },
+        },
+        required: ["id"],
+      },
     },
   },
   {
@@ -212,15 +255,26 @@ async function checkDeployments(): Promise<string> {
   }
 }
 
-async function checkSiteHealth(): Promise<string> {
-  const liveSites = cgProjects.filter((p) => p.status === "live" && p.url);
+async function checkSiteHealth(supabase: Awaited<ReturnType<typeof createClient>>): Promise<string> {
+  const { data: projects, error } = await supabase
+    .from("cg_projects")
+    .select("*")
+    .order("created_at");
 
-  const results = await Promise.all(
+  if (error) return `Could not load projects from database: ${error.message}`;
+  if (!projects?.length) return "No projects found in registry.";
+
+  const liveSites = projects.filter((p) => p.status === "live" && p.url);
+  const inDev = projects.filter((p) => p.status === "in-development");
+  const paused = projects.filter((p) => p.status === "paused");
+  const planning = projects.filter((p) => p.status === "planning");
+
+  const pingResults = await Promise.all(
     liveSites.map(async (project) => {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 8000);
-        const res = await fetch(project.url!, {
+        const res = await fetch(project.url, {
           method: "HEAD",
           signal: controller.signal,
           cache: "no-store",
@@ -245,13 +299,49 @@ async function checkSiteHealth(): Promise<string> {
     })
   );
 
-  const inDev = cgProjects.filter((p) => p.status === "in-development");
-
   return JSON.stringify({
-    live_sites: results,
+    live_sites: pingResults,
     in_development: inDev.map((p) => ({ name: p.name, client: p.client, notes: p.notes })),
+    paused: paused.map((p) => ({ name: p.name, client: p.client, notes: p.notes })),
+    planning: planning.map((p) => ({ name: p.name, client: p.client, notes: p.notes })),
     checked_at: new Date().toISOString(),
   });
+}
+
+async function addProject(
+  args: { id: string; name: string; client: string; type: string; status: string; url?: string; github?: string; notes?: string },
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<string> {
+  const { error } = await supabase.from("cg_projects").insert({
+    id: args.id,
+    name: args.name,
+    client: args.client,
+    type: args.type,
+    status: args.status,
+    url: args.url ?? null,
+    github: args.github ?? null,
+    notes: args.notes ?? null,
+  });
+  if (error) return `Failed to add project: ${error.message}`;
+  return `Project "${args.name}" added to the registry with status "${args.status}".`;
+}
+
+async function updateProject(
+  args: { id: string; name?: string; client?: string; type?: string; status?: string; url?: string; github?: string; notes?: string },
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<string> {
+  const updates: Record<string, string | null> = {};
+  if (args.name !== undefined) updates.name = args.name;
+  if (args.client !== undefined) updates.client = args.client;
+  if (args.type !== undefined) updates.type = args.type;
+  if (args.status !== undefined) updates.status = args.status;
+  if (args.url !== undefined) updates.url = args.url;
+  if (args.github !== undefined) updates.github = args.github;
+  if (args.notes !== undefined) updates.notes = args.notes;
+
+  const { error } = await supabase.from("cg_projects").update(updates).eq("id", args.id);
+  if (error) return `Failed to update project: ${error.message}`;
+  return `Project "${args.id}" updated successfully.`;
 }
 
 async function webSearch(query: string): Promise<string> {
@@ -304,7 +394,9 @@ async function executeTool(name: string, args: string, supabase: Awaited<ReturnT
   if (name === "get_weather") return getWeather(parsed.location);
   if (name === "web_search") return webSearch(parsed.query);
   if (name === "check_deployments") return checkDeployments();
-  if (name === "check_site_health") return checkSiteHealth();
+  if (name === "check_site_health") return checkSiteHealth(supabase);
+  if (name === "add_project") return addProject(parsed, supabase);
+  if (name === "update_project") return updateProject(parsed, supabase);
   if (name === "delete_inquiry") return deleteInquiry(parsed.id, supabase);
   return `Unknown tool: ${name}`;
 }
@@ -732,13 +824,9 @@ When times are mentioned convert them to MST unless Jerry asks otherwise.
 ALL COMMON GROUND PROJECTS
 -------------------------------------------------------
 
-${cgProjects.map((p) =>
-  `${p.name} (${p.client})
-  Status: ${p.status}
-  Type: ${p.type}
-  URL: ${p.url ?? "Not yet deployed — localhost only"}
-  ${p.notes ? `Notes: ${p.notes}` : ""}`
-).join("\n\n")}
+The full project registry lives in the database.
+
+Call check_site_health to get the complete live list — it returns all projects by status (live, in-development, paused, planning) and pings every live site in real time.
 
 -------------------------------------------------------
 
@@ -746,9 +834,13 @@ When Jerry asks about site health or how sites are doing — call check_site_hea
 
 When Jerry asks about build or deployment status — call check_deployments immediately.
 
-For in-development projects with no URL: acknowledge they exist, report from the registry above, and note they are not yet live. You cannot ping localhost.
+When Jerry says he is starting a new build or working on a new site — call add_project immediately. Do not ask for every detail upfront. Add what you know, use sensible defaults, and confirm with Jerry after logging it.
 
-Always proactively mention in-development projects during morning briefs so Jerry stays aware of work in progress.
+When a site goes live, gets a URL, is paused, or any detail changes — call update_project immediately.
+
+For in-development projects: acknowledge they exist, note they are not yet live, and that you cannot ping localhost.
+
+Always call check_site_health during morning briefs and mention in-development and paused projects so Jerry stays aware of everything in progress.
 
 -------------------------------------------------------
 BUSINESS OPERATIONS
