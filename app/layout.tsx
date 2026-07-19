@@ -45,19 +45,19 @@ export const metadata: Metadata = {
       "Custom websites for small businesses across Utah — from Logan to St. George. Domain, email, website, and Google Business Profile. Built with purpose.",
     images: [
       {
-        url: "/cg-brand.png",
-        width: 1200,
-        height: 630,
+        url: "/cg-logo-wordmark.png",
+        width: 1254,
+        height: 1254,
         alt: "Common Ground Workshop",
       },
     ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "Common Ground Workshop — Web Design for Small Businesses in Utah",
     description:
       "Custom websites for small businesses across Utah. Domain, email, website, and Google Business Profile setup. Built with purpose.",
-    images: ["/cg-brand.png"],
+    images: ["/cg-logo-wordmark.png"],
   },
   robots: {
     index: true,
