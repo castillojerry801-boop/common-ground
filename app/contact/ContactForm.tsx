@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CGLogoStacked } from "@/app/components/ui/CGMark";
+import { CGMedallion } from "@/app/components/ui/CGMark";
 import Link from "next/link";
 
 const BUSINESS_TYPES = [
@@ -77,7 +77,7 @@ export default function ContactForm() {
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-6">
         <div className="w-full max-w-sm text-center">
           <div className="flex justify-center mb-10">
-            <CGLogoStacked size={64} markColor="white" />
+            <CGMedallion size={64} color="white" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-50 mb-4">
             We got it.
@@ -102,7 +102,7 @@ export default function ContactForm() {
       <div className="mx-auto w-full max-w-lg">
         <div className="flex justify-center mb-12">
           <Link href="/">
-            <CGLogoStacked size={64} markColor="white" />
+            <CGMedallion size={64} color="white" />
           </Link>
         </div>
 

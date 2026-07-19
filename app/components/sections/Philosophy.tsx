@@ -1,5 +1,5 @@
 import AnimateIn from "@/app/components/ui/AnimateIn";
-import { CGMark } from "@/app/components/ui/CGMark";
+import { CGMedallion } from "@/app/components/ui/CGMark";
 
 export default function Philosophy() {
   return (
@@ -9,7 +9,7 @@ export default function Philosophy() {
         className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/3 pointer-events-none"
         aria-hidden="true"
       >
-        <CGMark size={480} className="invert opacity-[0.12]" />
+        <CGMedallion size={480} className="invert opacity-[0.12]" />
       </div>
 
       <div className="relative mx-auto max-w-7xl px-6 lg:px-8">

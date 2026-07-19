@@ -1,6 +1,6 @@
 import LoginForm from "./LoginForm";
 import type { Metadata } from "next";
-import { CGLogoStacked } from "@/app/components/ui/CGMark";
+import { CGMedallion } from "@/app/components/ui/CGMark";
 
 export const metadata: Metadata = {
   title: "Sign In — Common Ground Workshop",
@@ -12,7 +12,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex justify-center mb-12">
-          <CGLogoStacked size={80} markColor="white" />
+          <CGMedallion size={80} color="white" />
         </div>
 
         {/* Headline */}

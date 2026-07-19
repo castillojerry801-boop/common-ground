@@ -1,5 +1,3 @@
-import { CGMark } from "@/app/components/ui/CGMark";
-
 export default function Hero() {
   return (
     <section className="relative min-h-screen flex items-center bg-white dark:bg-zinc-950 overflow-hidden">
@@ -76,32 +74,31 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* ── Right: brand mark showcase ── */}
+          {/* ── Right: wordmark logo ── */}
           <div
             className="hero-in hidden lg:flex items-center justify-center relative h-[480px]"
             style={{ animationDelay: "200ms" }}
-            aria-hidden="true"
           >
-            {/* Outer rings */}
-            <div className="absolute w-[440px] h-[440px] rounded-full border border-zinc-200 dark:border-zinc-800/70" />
-            <div className="absolute w-[320px] h-[320px] rounded-full border border-zinc-200 dark:border-zinc-800/70" />
-
-            {/* Amber bloom behind mark */}
+            {/* Soft grounding shadow behind the logo */}
             <div
-              className="absolute w-64 h-64 rounded-full pointer-events-none"
+              className="absolute pointer-events-none"
               style={{
-                background:
-                  "radial-gradient(circle, rgba(245,158,11,0.18) 0%, transparent 70%)",
+                width: "340px",
+                height: "120px",
+                bottom: "80px",
+                background: "radial-gradient(ellipse, rgba(0,0,0,0.10) 0%, transparent 70%)",
+                filter: "blur(24px)",
               }}
             />
-
-            {/* The mark — ghost watermark */}
-            <CGMark size={300} className="opacity-[0.07] dark:invert dark:opacity-[0.12]" />
-
-            {/* Corner accent dots */}
-            <div className="absolute top-8 right-12 w-1.5 h-1.5 rounded-full bg-amber-400/60" />
-            <div className="absolute bottom-10 left-14 w-1 h-1 rounded-full bg-amber-400/40" />
-            <div className="absolute top-24 left-8 w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/cg-logo-wordmark-transparent.png"
+              alt="Common Ground Workshop"
+              className="relative w-[509px] h-auto"
+              style={{
+                filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.12)) drop-shadow(0 2px 6px rgba(0,0,0,0.08)) contrast(1.02)",
+              }}
+            />
           </div>
         </div>
       </div>

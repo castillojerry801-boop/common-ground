@@ -52,6 +52,29 @@ export function CGLogoHorizontal({
   return <CGMark size={size} color={markColor} className={className} />;
 }
 
+export function CGMedallion({
+  size = 40,
+  color = "currentColor",
+  className = "",
+}: {
+  size?: number;
+  color?: string;
+  className?: string;
+}) {
+  const filter = colorFilter(color);
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/cg-logo-medallion-transparent.png"
+      width={size}
+      height={size}
+      alt="Common Ground Workshop"
+      className={className}
+      style={filter ? { filter } : undefined}
+    />
+  );
+}
+
 export function CGLogoStacked({
   size = 72,
   markColor = "currentColor",

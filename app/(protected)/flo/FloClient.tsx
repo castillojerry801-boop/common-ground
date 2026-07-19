@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { CGMark } from "@/app/components/ui/CGMark";
+import { CGMedallion } from "@/app/components/ui/CGMark";
 
 type Message = { role: "assistant" | "user"; content: string };
 type ServiceStatus = { name: string; status: "healthy" | "degraded" | "down" };
@@ -433,7 +433,7 @@ System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`
       {/* Header */}
       <header className="border-b border-zinc-800/60 px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <CGMark size={26} color="#f59e0b" />
+          <CGMedallion size={26} color="#f59e0b" />
           <div className="w-px h-5 bg-zinc-700" />
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-500">FLO</span>
         </div>

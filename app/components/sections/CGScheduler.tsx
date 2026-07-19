@@ -1,5 +1,5 @@
 import AnimateIn from "@/app/components/ui/AnimateIn";
-import { CGMark } from "@/app/components/ui/CGMark";
+import { CGMedallion } from "@/app/components/ui/CGMark";
 
 export default function CGScheduler() {
   return (
@@ -99,7 +99,7 @@ export default function CGScheduler() {
             <div className="w-px h-12 bg-zinc-800" aria-hidden="true" />
 
             {/* Badge */}
-            <CGMark size={80} color="white" className="opacity-70 rounded-full" />
+            <CGMedallion size={80} color="white" className="opacity-70 rounded-full" />
           </div>
         </AnimateIn>
       </div>
