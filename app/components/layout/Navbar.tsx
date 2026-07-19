@@ -7,6 +7,7 @@ import { CGLogoHorizontal } from "@/app/components/ui/CGMark";
 const navLinks = [
   { label: "Products", href: "#products" },
   { label: "Philosophy", href: "#philosophy" },
+  { label: "Pricing", href: "/pricing" },
   { label: "Contact", href: "/contact" },
 ];
 
