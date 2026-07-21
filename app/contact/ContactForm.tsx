@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { CGMedallion } from "@/app/components/ui/CGMark";
 import Link from "next/link";
 
@@ -32,9 +33,12 @@ export default function ContactForm() {
     looking_for: "",
     notes: "",
   });
+  const [honeypot, setHoneypot] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const turnstileRef = useRef<TurnstileInstance>(undefined);
 
   const isOther = fields.business_type === "other";
 
@@ -57,16 +61,20 @@ export default function ContactForm() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(fields),
+        body: JSON.stringify({ ...fields, honeypot, turnstile_token: turnstileToken }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Something went wrong. Please try again.");
+        turnstileRef.current?.reset();
+        setTurnstileToken("");
       } else {
         setSubmitted(true);
       }
     } catch {
       setError("Something went wrong. Please try again.");
+      turnstileRef.current?.reset();
+      setTurnstileToken("");
     } finally {
       setLoading(false);
     }
@@ -117,6 +125,20 @@ export default function ContactForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          {/* Honeypot — invisible to humans, bots fill it in */}
+          <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: "1px", height: "1px", overflow: "hidden" }}>
+            <label htmlFor="website">Website</label>
+            <input
+              id="website"
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypot}
+              onChange={(e) => setHoneypot(e.target.value)}
+            />
+          </div>
+
           {/* Name + Business */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
@@ -239,6 +261,15 @@ export default function ContactForm() {
 
           {error && (
             <p className="text-sm text-red-400">{error}</p>
+          )}
+
+          {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+              onSuccess={setTurnstileToken}
+              options={{ theme: "dark" }}
+            />
           )}
 
           <button

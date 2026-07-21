@@ -13,9 +13,39 @@ const BUSINESS_TYPES = [
   "other",
 ];
 
+async function verifyTurnstile(token: string, ip: string | null): Promise<boolean> {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) return true; // skip verification in dev if key not set
+
+  const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secret, response: token, remoteip: ip ?? undefined }),
+  });
+
+  if (!res.ok) return false;
+  const data = await res.json();
+  return data.success === true;
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+
+  // Honeypot check — bots fill this in, humans never see it
+  if (body.honeypot) {
+    return NextResponse.json({ success: true }); // silently discard
+  }
+
+  // Turnstile verification
+  const siteKeyConfigured = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  if (siteKeyConfigured) {
+    const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for");
+    const valid = await verifyTurnstile(body.turnstile_token ?? "", ip);
+    if (!valid) {
+      return NextResponse.json({ error: "Verification failed. Please try again." }, { status: 400 });
+    }
+  }
 
   const { full_name, business_name, email, phone, business_type, business_description, looking_for, notes } = body;
 
