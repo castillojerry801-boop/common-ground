@@ -52,6 +52,16 @@ const products = [
     external: true,
   },
   {
+    name: "Fresh Styles Barbershop",
+    tagline: "Barbershop & Men's Grooming",
+    description:
+      "A custom website built for Fresh Styles Barbershop — giving the shop a professional online presence to connect with clients and showcase their craft.",
+    available: true,
+    href: "https://www.freshstyles-barbershop.com",
+    logo: "/logos/fresh-styles-barbershop.jpeg",
+    external: true,
+  },
+  {
     name: "More Coming",
     tagline: "Expanding the Portfolio",
     description:

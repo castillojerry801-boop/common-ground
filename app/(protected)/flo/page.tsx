@@ -59,6 +59,7 @@ export default async function FloPage() {
     { name: "CG Platform", status: "healthy" as const },
     { name: "GameFloHQ", status: "healthy" as const },
     { name: "BeautyBook", status: "healthy" as const },
+    { name: "Fresh Styles", status: "healthy" as const },
   ];
 
   // Build monthly transaction summary for FLO context
