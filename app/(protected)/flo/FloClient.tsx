@@ -25,6 +25,7 @@ interface FloClientProps {
   stats: { userCount: number; orgCount: number; inquiryCount: number };
   services: ServiceStatus[];
   recentInquiries: ContactSubmission[];
+  transactionSummary: string;
 }
 
 const STATUS_COLOR = {
@@ -54,7 +55,7 @@ function cleanForSpeech(text: string): string {
     .trim();
 }
 
-export default function FloClient({ userEmail, stats, services, recentInquiries: initialInquiries }: FloClientProps) {
+export default function FloClient({ userEmail, stats, services, recentInquiries: initialInquiries, transactionSummary }: FloClientProps) {
   const [inquiries, setInquiries] = useState(initialInquiries);
 
   function removeInquiry(id: string) {
@@ -289,7 +290,15 @@ Organizations: ${stats.orgCount}
 Contact inquiries: ${stats.inquiryCount}
 Recent inquiries (id | name | business | type | date):\n${inquiryList}
 Platform URL: cg-workshop.com — live
-System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`).join("\n")}`;
+System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`).join("\n")}
+
+Transaction history (monthly, income | expenses | net):
+${transactionSummary}
+
+To give the owner a date-filtered transaction report (PDF-printable), provide this link:
+  /flo/transactions/export?from=YYYY-MM-DD&to=YYYY-MM-DD
+Example for July 2026: /flo/transactions/export?from=2026-07-01&to=2026-07-31
+To give a receipt PDF link: /flo/receipts/[receipt-id]/print`;
       };
 
       let full = "";
@@ -540,21 +549,38 @@ System services:\n${services.map((s) => `  ${s.name}: ${STATUS_LABEL[s.status]}`
 
             <section>
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-600 mb-3">Quick Links</p>
-              <Link
-                href="/flo/toolbox"
-                className="flex items-center gap-3 rounded-lg border border-zinc-800/60 bg-zinc-900/40 px-3 py-2.5 hover:bg-zinc-800/40 hover:border-zinc-700/60 transition-colors group"
-              >
-                <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 2.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
-                </svg>
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-zinc-300 group-hover:text-zinc-100 transition-colors">Toolbox</p>
-                  <p className="text-[11px] text-zinc-600">Prompt library · Copy &amp; paste</p>
-                </div>
-                <svg className="w-3.5 h-3.5 text-zinc-700 group-hover:text-zinc-500 ml-auto shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-              </Link>
+              <div className="space-y-2">
+                <Link
+                  href="/flo/toolbox"
+                  className="flex items-center gap-3 rounded-lg border border-zinc-800/60 bg-zinc-900/40 px-3 py-2.5 hover:bg-zinc-800/40 hover:border-zinc-700/60 transition-colors group"
+                >
+                  <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 2.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+                  </svg>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-zinc-300 group-hover:text-zinc-100 transition-colors">Toolbox</p>
+                    <p className="text-[11px] text-zinc-600">Prompt library · Copy &amp; paste</p>
+                  </div>
+                  <svg className="w-3.5 h-3.5 text-zinc-700 group-hover:text-zinc-500 ml-auto shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </Link>
+                <Link
+                  href="/flo/receipts"
+                  className="flex items-center gap-3 rounded-lg border border-zinc-800/60 bg-zinc-900/40 px-3 py-2.5 hover:bg-zinc-800/40 hover:border-zinc-700/60 transition-colors group"
+                >
+                  <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+                  </svg>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-zinc-300 group-hover:text-zinc-100 transition-colors">Receipts</p>
+                    <p className="text-[11px] text-zinc-600">Receipts · Transactions</p>
+                  </div>
+                  <svg className="w-3.5 h-3.5 text-zinc-700 group-hover:text-zinc-500 ml-auto shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </Link>
+              </div>
             </section>
 
             <section>
