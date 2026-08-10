@@ -321,6 +321,15 @@ export default function PricingPage() {
                   Discuss a Custom Project
                   <ArrowRight />
                 </Link>
+                <p className="mt-6 text-sm text-zinc-600">
+                  Already had a conversation?{" "}
+                  <Link
+                    href="/intake"
+                    className="text-zinc-400 hover:text-zinc-200 underline underline-offset-4 transition-colors duration-150"
+                  >
+                    Fill out the intake form →
+                  </Link>
+                </p>
               </AnimateIn>
             </div>
           </div>
