@@ -21,6 +21,7 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/auth/")) return true;
   if (pathname.startsWith("/_next/")) return true;
   if (pathname === "/contact" || pathname === "/api/contact") return true;
+  if (pathname === "/intake" || pathname === "/api/intake") return true;
   if (pathname === "/pricing") return true;
   if (pathname === "/sitemap.xml" || pathname === "/robots.txt") return true;
   if (/\.(ico|svg|png|jpg|jpeg|webp|woff2?)$/.test(pathname)) return true;
